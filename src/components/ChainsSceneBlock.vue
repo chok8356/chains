@@ -68,7 +68,6 @@ const style = computed(() => {
     borderColor: props.selected ? settings.color : 'transparent',
     boxShadow: props.dragging ? `0px 21px 28px ${shadowColor}` : '',
     transform: `translate3d(${x}px, ${y}px, 0)`,
-    transformOrigin: 'top left',
   }
 })
 
@@ -89,6 +88,7 @@ defineExpose({
   overflow: hidden;
   padding: 4px;
   position: absolute;
+  transform-origin: top left;
   transition:
     box-shadow 200ms,
     border-color 200ms;

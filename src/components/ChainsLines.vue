@@ -6,11 +6,7 @@
     <g
       :key="lineId"
       v-for="(line, lineId) in lines">
-      <path
-        :d="getPath(line)"
-        :style="{
-          strokeWidth: scale,
-        }" />
+      <path :d="getPath(line)" />
     </g>
   </svg>
 </template>
@@ -21,11 +17,9 @@ import type { Line, Lines } from './types'
 withDefaults(
   defineProps<{
     lines: Lines
-    scale?: number
   }>(),
   {
     lines: () => ({}),
-    scale: 1,
   },
 )
 
@@ -42,10 +36,18 @@ const getPath = ({ end, start }: Line) => {
 <style module>
 .root {
   fill: none;
-  height: 100%;
+  height: auto;
+  left: 0;
+  overflow: visible;
   pointer-events: none;
+  position: absolute;
   stroke: var(--color-grey-400);
   stroke-opacity: 1;
-  width: 100%;
+  stroke-width: 1;
+  top: 0;
+  transform-origin: top left;
+  width: auto;
+  will-change: transform;
+  z-index: 0;
 }
 </style>

@@ -1,26 +1,21 @@
 <template>
   <div :class="$style.root">
     <!--grid-->
-    <ChainsGrid
-      :class="$style.grid"
-      :scale="scene.scale" />
-
-    <!--lines-->
-    <ChainsLines
-      :class="$style.lines"
-      :lines="lines"
-      :scale="scene.scale" />
+    <ChainsGrid :scale="scene.scale" />
 
     <!--blocks container-->
     <div
       :class="$style.blocks"
-      @contextmenu.capture.stop="handleContextMenu"
-      @mousedown.capture.stop="handleDown"
-      @wheel.capture.stop="handleWheel"
+      @contextmenu.prevent
+      @mousedown="handleDown"
+      @wheel.prevent="handleWheel"
       ref="blocksEl">
       <div
         :class="$style.scene"
-        :style="sceneStyles">
+        :style="sceneStyle"
+        ref="sceneEl">
+        <ChainsLines :lines="lines" />
+
         <ChainsSceneBlock
           :block="block"
           :dragging="block.id === draggingBlockId"
@@ -29,26 +24,24 @@
           :selected="selected[block.id]"
           @mousedown="handleDownBlock(block)"
           @mouseup="handleUpBlock(block)"
-          v-for="block in blocks"
-          v-memo="[block.id === draggingBlockId, selected[block.id]]" />
+          v-for="block in blocks" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import ChainsGrid from '@/components/ChainsGrid.vue'
+import ChainsLines from '@/components/ChainsLines.vue'
+import ChainsSceneBlock from '@/components/ChainsSceneBlock.vue'
 import { cloneDeep } from 'lodash-es'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import type { Block, Blocks, ICoords, Line, Lines, Scene } from './types'
 
-import ChainsGrid from './ChainsGrid.vue'
-import ChainsLines from './ChainsLines.vue'
-import ChainsSceneBlock from './ChainsSceneBlock.vue'
-
 const SCENE_SCALE = {
-  max: 1.5,
-  min: 0.2,
+  max: 2,
+  min: 0.1,
 }
 
 const props = withDefaults(
@@ -71,19 +64,20 @@ const scene = ref<Scene>({
   scale: 1,
 })
 
-const mouse = ref<{ current: ICoords; last: ICoords }>({
+const mouse = ref<{ current: ICoords; start: ICoords }>({
   current: { x: 0, y: 0 },
-  last: { x: 0, y: 0 },
+  start: { x: 0, y: 0 },
 })
 
 const dragging = ref<boolean>(false)
+
 const draggingBlockId = ref<Block['id'] | null>(null)
 
 const selected = ref<Record<Block['id'], true>>({})
 
-const blocksEl: any = ref(null)
+const blocksEl = ref<HTMLDivElement | null>(null)
 
-const blocksEls: any = ref({})
+const blocksEls = ref<Record<Block['id'], HTMLDivElement>>({})
 
 const setBlocksRefs = (cmp: any, id: number) => {
   if (cmp?.rootEl) {
@@ -155,11 +149,11 @@ const handleMove = (e: MouseEvent) => {
   mouse.value.current.x = newMouse.x
   mouse.value.current.y = newMouse.y
 
-  const diffX = mouse.value.current.x - mouse.value.last.x
-  const diffY = mouse.value.current.y - mouse.value.last.y
+  const diffX = mouse.value.current.x - mouse.value.start.x
+  const diffY = mouse.value.current.y - mouse.value.start.y
 
-  mouse.value.last.x = mouse.value.current.x
-  mouse.value.last.y = mouse.value.current.y
+  mouse.value.start.x = mouse.value.current.x
+  mouse.value.start.y = mouse.value.current.y
 
   if (dragging.value) {
     scene.value.center.x += diffX
@@ -202,14 +196,15 @@ const handleMove = (e: MouseEvent) => {
 }
 
 const handleDown = (e: MouseEvent) => {
+  if (!blocksEl.value) return
   const target = getTarget(e)
 
   const newMouse = getMousePosition(blocksEl.value, e)
   mouse.value.current.x = newMouse.x
   mouse.value.current.y = newMouse.y
 
-  mouse.value.last.x = mouse.value.current.x
-  mouse.value.last.y = mouse.value.current.y
+  mouse.value.start.x = mouse.value.current.x
+  mouse.value.start.y = mouse.value.current.y
 
   if (e.button === 0) {
     if (target === blocksEl.value) {
@@ -237,27 +232,6 @@ const handleUpBlock = (block: Block) => {
   selected.value[block.id] = true
 }
 
-const handleWheelScroll = (step: number, zoomingCenter: ICoords) => {
-  const deltaScale = Math.pow(1.1, step)
-  scene.value.scale *= deltaScale
-
-  if (scene.value.scale < SCENE_SCALE.min) {
-    scene.value.scale = SCENE_SCALE.min
-    return
-  }
-
-  if (scene.value.scale > SCENE_SCALE.max) {
-    scene.value.scale = SCENE_SCALE.max
-    return
-  }
-
-  const deltaOffsetX = (zoomingCenter.x - scene.value.center.x) * (deltaScale - 1)
-  const deltaOffsetY = (zoomingCenter.y - scene.value.center.y) * (deltaScale - 1)
-
-  scene.value.center.x -= deltaOffsetX
-  scene.value.center.y -= deltaOffsetY
-}
-
 const handleWheel = async (e: WheelEvent) => {
   if (e.preventDefault) e.preventDefault()
 
@@ -276,12 +250,24 @@ const handleWheel = async (e: WheelEvent) => {
     delta = (delta * 100) / 3
   }
 
-  handleWheelScroll(delta * step, mouse.value.current)
-}
+  const deltaScale = Math.pow(1.1, delta * step)
+  scene.value.scale *= deltaScale
 
-const handleContextMenu = (e: MouseEvent) => {
-  e.preventDefault()
-  return false
+  if (scene.value.scale < SCENE_SCALE.min) {
+    scene.value.scale = SCENE_SCALE.min
+    return
+  }
+
+  if (scene.value.scale > SCENE_SCALE.max) {
+    scene.value.scale = SCENE_SCALE.max
+    return
+  }
+
+  const deltaOffsetX = (mouse.value.current.x - scene.value.center.x) * (deltaScale - 1)
+  const deltaOffsetY = (mouse.value.current.y - scene.value.center.y) * (deltaScale - 1)
+
+  scene.value.center.x -= deltaOffsetX
+  scene.value.center.y -= deltaOffsetY
 }
 
 const getLineId = (block: Block) => {
@@ -324,26 +310,43 @@ const getLine = (block: Block): Line | null => {
 }
 
 const getConnectionPos = (block: Block, parent = false) => {
-  let x = scene.value.center.x + block.coords.x * scene.value.scale
-  let y = scene.value.center.y + block.coords.y * scene.value.scale
+  let { x, y } = block.coords
 
   const blockEl = blocksEls.value[block.id]
 
   if (blockEl) {
     const { height, width } = blockEl.getBoundingClientRect()
 
-    x += width / 2
+    x += width / 2 / scene.value.scale
 
     if (parent) {
-      y += height
+      y += height / scene.value.scale
     }
   }
 
   return { x, y }
 }
 
+onMounted(async () => {
+  await nextTick()
+
+  if (blocksEl.value) {
+    scene.value.center.x = blocksEl.value.clientWidth / 2
+    scene.value.center.y = blocksEl.value.clientHeight / 2
+    lines.value = getLines()
+  }
+
+  document.documentElement.addEventListener('mousemove', handleMove)
+  document.documentElement.addEventListener('mouseup', handleUp)
+})
+
+onBeforeUnmount(() => {
+  document.documentElement.removeEventListener('mousemove', handleMove)
+  document.documentElement.removeEventListener('mouseup', handleUp)
+})
+
 const sceneRafId = ref<null | number>(null)
-const sceneStyles = ref<{ transform: string }>({
+const sceneStyle = ref<{ transform: string }>({
   transform: ``,
 })
 
@@ -354,32 +357,15 @@ watch(
       cancelAnimationFrame(sceneRafId.value)
     }
     sceneRafId.value = requestAnimationFrame(() => {
-      lines.value = getLines()
       const {
         center: { x, y },
         scale,
       } = scene.value
-      sceneStyles.value.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`
+      sceneStyle.value.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`
     })
   },
   { deep: true, immediate: true },
 )
-
-onMounted(async () => {
-  await nextTick()
-
-  scene.value.center.x = blocksEl.value.clientWidth / 2
-  scene.value.center.y = blocksEl.value.clientHeight / 2
-  lines.value = getLines()
-
-  document.documentElement.addEventListener('mousemove', handleMove)
-  document.documentElement.addEventListener('mouseup', handleUp)
-})
-
-onBeforeUnmount(() => {
-  document.documentElement.removeEventListener('mousemove', handleMove)
-  document.documentElement.removeEventListener('mouseup', handleUp)
-})
 </script>
 
 <style module>
@@ -392,43 +378,25 @@ onBeforeUnmount(() => {
   z-index: 0;
 }
 
-.grid {
-  height: calc(100% + 2px);
-  left: -1px;
-  position: absolute;
-  top: -1px;
-  width: calc(100% + 2px);
-}
-
-.lines {
+.blocks {
   height: 100%;
   left: 0;
-  pointer-events: none;
-  position: absolute;
+  overflow: hidden;
+  position: relative;
   top: 0;
+  transform: translateZ(0);
   width: 100%;
   z-index: 0;
 }
 
 .scene {
   height: 0;
-  left: 50%;
+  overflow: visible;
   position: absolute;
-  top: 50%;
   transform: translateZ(0);
   transform-origin: top left;
   width: 0;
   will-change: contents;
-  z-index: 0;
-}
-
-.blocks {
-  height: 100%;
-  left: 0;
-  position: relative;
-  top: 0;
-  transform: translateZ(0);
-  width: 100%;
   z-index: 0;
 }
 </style>
