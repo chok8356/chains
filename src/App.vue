@@ -13,7 +13,7 @@ import { onMounted, ref } from 'vue'
 const blocks = ref<Blocks>({})
 
 onMounted(() => {
-  const count = 2000
+  const count = 0
   const perRow = 25
   let row = 0
 
@@ -32,55 +32,55 @@ onMounted(() => {
     }
   }
 
-  // blocks.value[1] = {
-  //   coords: {
-  //     x: 0,
-  //     y: -300,
-  //   },
-  //   id: 1,
-  //   parentId: null,
-  //   type: 'EmailActionHandler',
-  // }
-  //
-  // blocks.value[2] = {
-  //   coords: {
-  //     x: 0,
-  //     y: 0,
-  //   },
-  //   id: 2,
-  //   parentId: 1,
-  //   type: 'SMSActionHandler',
-  // }
-  //
-  // blocks.value[3] = {
-  //   coords: {
-  //     x: -200,
-  //     y: 0,
-  //   },
-  //   id: 3,
-  //   parentId: 1,
-  //   type: 'PushActionHandler',
-  // }
-  //
-  // blocks.value[4] = {
-  //   coords: {
-  //     x: -300,
-  //     y: 300,
-  //   },
-  //   id: 4,
-  //   parentId: 3,
-  //   type: 'ConditionActionHandler',
-  // }
-  //
-  // blocks.value[5] = {
-  //   coords: {
-  //     x: 0,
-  //     y: 300,
-  //   },
-  //   id: 5,
-  //   parentId: 3,
-  //   type: 'ConditionActionHandler',
-  // }
+  blocks.value[1] = {
+    coords: {
+      x: 0,
+      y: -300,
+    },
+    id: 1,
+    parentId: null,
+    type: 'EmailActionHandler',
+  }
+
+  blocks.value[2] = {
+    coords: {
+      x: 0,
+      y: 0,
+    },
+    id: 2,
+    parentId: 1,
+    type: 'SMSActionHandler',
+  }
+
+  blocks.value[3] = {
+    coords: {
+      x: -200,
+      y: 0,
+    },
+    id: 3,
+    parentId: 1,
+    type: 'PushActionHandler',
+  }
+
+  blocks.value[4] = {
+    coords: {
+      x: -300,
+      y: 300,
+    },
+    id: 4,
+    parentId: 3,
+    type: 'ConditionActionHandler',
+  }
+
+  blocks.value[5] = {
+    coords: {
+      x: 0,
+      y: 300,
+    },
+    id: 5,
+    parentId: 3,
+    type: 'ConditionActionHandler',
+  }
 })
 </script>
 

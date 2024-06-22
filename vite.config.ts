@@ -10,19 +10,19 @@ export default defineConfig(({ mode }) => {
     css: {
       modules: {
         generateScopedName: isProduction ? '[hash:base64:5]' : '[local]--[hash:base64:5]',
-        localsConvention: 'camelCaseOnly'
-      }
+        localsConvention: 'camelCaseOnly',
+      },
     },
     plugins: [
       vue(),
       vueDevTools({
-        launchEditor: 'webstorm'
-      })
+        launchEditor: 'webstorm',
+      }),
     ],
     resolve: {
       alias: {
-        '@': fileURLToPath(new URL('./src', import.meta.url))
-      }
-    }
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+      },
+    },
   }
 })
