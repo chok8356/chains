@@ -17,7 +17,7 @@ const getRandomNumberInRange = (min: number, max: number) => {
 }
 
 onMounted(() => {
-  const range = 100
+  const range = 10
   const count = 0
 
   for (let i = 0; i < count; i++) {

@@ -14,11 +14,11 @@
     ref="rootEl"
   >
     <div :class="$style.header" :style="{ backgroundColor: settings.color }">
-      <SpIcon :class="$style.icon" :name="settings.icon" />
+      <div :class="$style.icon" />
       <span :class="$style.text">
         {{ settings.text }}
       </span>
-      <SpIcon :class="[$style.icon, $style.iconEdit]" color="grey" name="edit" />
+      <div :class="[$style.icon, $style.iconEdit]" />
     </div>
     <div :class="$style.content">
       <slot>
@@ -33,6 +33,7 @@
 </template>
 
 <script setup lang="ts">
+import { colord } from 'colord'
 import { computed, ref } from 'vue'
 
 import { type Block, getBlockSettings } from './types'
@@ -63,8 +64,7 @@ const rootEl = ref<HTMLDivElement | null>(null)
 const settings = getBlockSettings(props.block)
 
 const boxShadowColor = computed(() => {
-  // return Color(settings.color).alpha(0.2).string()
-  return '1'
+  return colord(settings.color).alpha(0.2).toRgbString()
 })
 
 defineExpose({
