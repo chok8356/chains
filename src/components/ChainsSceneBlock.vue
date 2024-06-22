@@ -7,10 +7,7 @@
         [$style.selected]: selected,
       },
     ]"
-    :style="{
-      borderColor: selected ? settings.color : 'transparent',
-      boxShadow: dragging ? `0px 21px 28px ${boxShadowColor}` : '',
-    }"
+    :style="style"
     ref="rootEl">
     <div
       :class="$style.header"
@@ -64,8 +61,15 @@ const rootEl = ref<HTMLDivElement | null>(null)
 
 const settings = getBlockSettings(props.block)
 
-const boxShadowColor = computed(() => {
-  return colord(settings.color).alpha(0.2).toRgbString()
+const style = computed(() => {
+  const { x, y } = props.block.coords
+  const shadowColor = colord(settings.color).alpha(0.2).toRgbString()
+  return {
+    borderColor: props.selected ? settings.color : 'transparent',
+    boxShadow: props.dragging ? `0px 21px 28px ${shadowColor}` : '',
+    transform: `translate3d(${x}px, ${y}px, 0)`,
+    transformOrigin: 'top left',
+  }
 })
 
 defineExpose({
@@ -90,6 +94,7 @@ defineExpose({
     border-color 200ms;
   user-select: none;
   width: 168px;
+  will-change: transform;
   z-index: 1;
 
   .iconEdit {

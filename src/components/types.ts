@@ -33,15 +33,9 @@ export interface ICoords {
   y: number
 }
 
-export interface IScale {
-  current: number
-  max: number
-  min: number
-}
-
 export interface Scene {
   center: ICoords
-  scale: IScale
+  scale: number
 }
 
 export interface Line {
