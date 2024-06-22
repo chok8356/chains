@@ -1,10 +1,15 @@
 <template>
   <div :class="$style.root">
     <!--grid-->
-    <ChainsGrid :class="$style.grid" :scale="scene.scale.current" />
+    <ChainsGrid
+      :class="$style.grid"
+      :scale="scene.scale.current" />
 
     <!--lines-->
-    <ChainsLines :class="$style.lines" :lines="lines" :scale="scene.scale.current" />
+    <ChainsLines
+      :class="$style.lines"
+      :lines="lines"
+      :scale="scene.scale.current" />
 
     <!--blocks container-->
     <div
@@ -13,8 +18,7 @@
       @mousedown="handleDown"
       @mousemove="handleMove"
       @wheel="handleWheel"
-      ref="blocksEl"
-    >
+      ref="blocksEl">
       <ChainsSceneBlock
         :block="block"
         :dragging="block.id === draggingBlockId"
@@ -24,8 +28,7 @@
         :style="getBlockStyle(block)"
         @mousedown="handleDownBlock(block)"
         @mouseup="handleUpBlock(block)"
-        v-for="block in blocks"
-      />
+        v-for="block in blocks" />
     </div>
   </div>
 </template>
@@ -48,8 +51,8 @@ const props = withDefaults(
     blocks: Blocks
   }>(),
   {
-    blocks: () => ({})
-  }
+    blocks: () => ({}),
+  },
 )
 
 const emit = defineEmits<{
@@ -63,13 +66,13 @@ const scene = ref<Scene>({
   scale: {
     current: 1,
     max: 1.5,
-    min: 0.2
-  }
+    min: 0.2,
+  },
 })
 
 const mouse = ref<{ current: ICoords; last: ICoords }>({
   current: { x: 0, y: 0 },
-  last: { x: 0, y: 0 }
+  last: { x: 0, y: 0 },
 })
 
 const dragging = ref<boolean>(false)
@@ -119,7 +122,7 @@ const getBlockStyle = (block: Block) => {
 
   return {
     transform: `translate3d(${x}px, ${y}px, 0) scale(${scene.value.scale.current})`,
-    transformOrigin: 'top left'
+    transformOrigin: 'top left',
   }
 }
 
@@ -149,7 +152,7 @@ const getMousePosition = (element: HTMLElement, event: MouseEvent) => {
 
   return {
     x: x,
-    y: y
+    y: y,
   }
 }
 
@@ -200,9 +203,9 @@ const handleMove = throttle((e: MouseEvent) => {
         ...block,
         coords: {
           x,
-          y
-        }
-      }
+          y,
+        },
+      },
     })
   }
 }, THROTTLE_TIME)
@@ -320,12 +323,12 @@ const getLine = (block: Block): Line | null => {
   return {
     end: {
       x: blockLinkCoords.x,
-      y: blockLinkCoords.y
+      y: blockLinkCoords.y,
     },
     start: {
       x: parentBlockLinkCoords.x,
-      y: parentBlockLinkCoords.y
-    }
+      y: parentBlockLinkCoords.y,
+    },
   }
 }
 
@@ -355,7 +358,7 @@ watch(
       lines.value = getLines()
     })
   }, THROTTLE_TIME),
-  { deep: true }
+  { deep: true },
 )
 
 onMounted(async () => {

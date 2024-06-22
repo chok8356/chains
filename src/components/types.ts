@@ -63,97 +63,97 @@ export const getBlockSettings = (block: Block): BlockSettings => {
       return {
         color: '#6585D6',
         icon: 'condition',
-        text: 'ConditionActionHandler'
+        text: 'ConditionActionHandler',
       }
     case 'ConsoleResultHandler':
       return {
         color: 'var(--color-primary-blue)',
         icon: 'squares',
-        text: 'ConsoleResultHandler'
+        text: 'ConsoleResultHandler',
       }
     case 'DoubleOptInEmailActionHandler':
       return {
         color: '#2CBED0',
         icon: 'mail-double-opt-in',
-        text: 'DoubleOptInEmailActionHandler'
+        text: 'DoubleOptInEmailActionHandler',
       }
     case 'EmailActionHandler':
       return {
         color: '#FB9600',
         icon: 'mail',
-        text: 'EmailActionHandler'
+        text: 'EmailActionHandler',
       }
     case 'EventActionHandler':
       return {
         color: '#7942EE',
         icon: 'add-tag',
-        text: 'EventActionHandler'
+        text: 'EventActionHandler',
       }
     case 'ExternalUrlActionHandler':
       return {
         color: '#6585D6',
         icon: 'setting',
-        text: 'ExternalUrlActionHandler'
+        text: 'ExternalUrlActionHandler',
       }
     case 'ForwardEmailActionHandler':
       return {
         color: '#FFC500',
         icon: 'mail-redirect',
-        text: 'ForwardEmailActionHandler'
+        text: 'ForwardEmailActionHandler',
       }
     case 'PointsActionHandler':
       return {
         color: '#8DBE00',
         icon: 'coins',
-        text: 'PointsActionHandler'
+        text: 'PointsActionHandler',
       }
     case 'PointsExpireHandler':
       return {
         color: '#C4CC51',
         icon: 'coins',
-        text: 'PointsExpireHandler'
+        text: 'PointsExpireHandler',
       }
     case 'PushActionHandler':
       return {
         color: '#7E8BAA',
         icon: 'notification',
-        text: 'PushActionHandler'
+        text: 'PushActionHandler',
       }
     case 'ReferralEmailActionHandler':
       return {
         color: '#BA72C7',
         icon: 'mail-referral',
-        text: 'ReferralEmailActionHandler'
+        text: 'ReferralEmailActionHandler',
       }
     case 'RemoveEventActionHandler':
       return {
         color: '#E25A50',
         icon: 'delete-tag',
-        text: 'RemoveEventActionHandler'
+        text: 'RemoveEventActionHandler',
       }
     case 'SMSActionHandler':
       return {
         color: '#21B657',
         icon: 'message',
-        text: 'SMSActionHandler'
+        text: 'SMSActionHandler',
       }
     case 'SplitActionHandler':
       return {
         color: '#6585D6',
         icon: 'split',
-        text: 'SplitActionHandler'
+        text: 'SplitActionHandler',
       }
     case 'StatusActionHandler':
       return {
         color: '#7084B6',
         icon: 'star',
-        text: 'StatusActionHandler'
+        text: 'StatusActionHandler',
       }
     case 'WaitActionHandler':
       return {
         color: 'var(--color-primary-blue)',
         icon: 'clock',
-        text: 'WaitActionHandler'
+        text: 'WaitActionHandler',
       }
   }
 }

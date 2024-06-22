@@ -1,12 +1,16 @@
 <template>
-  <svg :class="$style.root" height="100%" width="100%">
-    <g :key="lineId" v-for="(line, lineId) in lines">
+  <svg
+    :class="$style.root"
+    height="100%"
+    width="100%">
+    <g
+      :key="lineId"
+      v-for="(line, lineId) in lines">
       <path
         :d="getPath(line)"
         :style="{
-          strokeWidth: scale
-        }"
-      />
+          strokeWidth: scale,
+        }" />
     </g>
   </svg>
 </template>
@@ -21,8 +25,8 @@ withDefaults(
   }>(),
   {
     lines: () => ({}),
-    scale: 1
-  }
+    scale: 1,
+  },
 )
 
 const distance = ({ end, start }: Line) => {

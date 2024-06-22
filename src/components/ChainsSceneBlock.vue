@@ -4,16 +4,17 @@
       $style.root,
       {
         [$style.dragging]: dragging,
-        [$style.selected]: selected
-      }
+        [$style.selected]: selected,
+      },
     ]"
     :style="{
       borderColor: selected ? settings.color : 'transparent',
-      boxShadow: dragging ? `0px 21px 28px ${boxShadowColor}` : ''
+      boxShadow: dragging ? `0px 21px 28px ${boxShadowColor}` : '',
     }"
-    ref="rootEl"
-  >
-    <div :class="$style.header" :style="{ backgroundColor: settings.color }">
+    ref="rootEl">
+    <div
+      :class="$style.header"
+      :style="{ backgroundColor: settings.color }">
       <div :class="$style.icon" />
       <span :class="$style.text">
         {{ settings.text }}
@@ -48,15 +49,15 @@ const props = withDefaults(
     block: () => ({
       coords: {
         x: 0,
-        y: 0
+        y: 0,
       },
       id: -1,
       parentId: null,
-      type: 'StatusActionHandler'
+      type: 'StatusActionHandler',
     }),
     dragging: false,
-    selected: false
-  }
+    selected: false,
+  },
 )
 
 const rootEl = ref<HTMLDivElement | null>(null)
@@ -68,7 +69,7 @@ const boxShadowColor = computed(() => {
 })
 
 defineExpose({
-  rootEl
+  rootEl,
 })
 </script>
 

@@ -24,62 +24,62 @@ onMounted(() => {
     blocks.value[i] = {
       coords: {
         x: getRandomNumberInRange(-range, range) * i,
-        y: getRandomNumberInRange(-range, range) * i
+        y: getRandomNumberInRange(-range, range) * i,
       },
       id: i,
       parentId: null,
-      type: 'EmailActionHandler'
+      type: 'EmailActionHandler',
     }
   }
 
   blocks.value[1] = {
     coords: {
       x: 0,
-      y: -300
+      y: -300,
     },
     id: 1,
     parentId: null,
-    type: 'EmailActionHandler'
+    type: 'EmailActionHandler',
   }
 
   blocks.value[2] = {
     coords: {
       x: 0,
-      y: 0
+      y: 0,
     },
     id: 2,
     parentId: 1,
-    type: 'SMSActionHandler'
+    type: 'SMSActionHandler',
   }
 
   blocks.value[3] = {
     coords: {
       x: -200,
-      y: 0
+      y: 0,
     },
     id: 3,
     parentId: 1,
-    type: 'PushActionHandler'
+    type: 'PushActionHandler',
   }
 
   blocks.value[4] = {
     coords: {
       x: -300,
-      y: 300
+      y: 300,
     },
     id: 4,
     parentId: 3,
-    type: 'ConditionActionHandler'
+    type: 'ConditionActionHandler',
   }
 
   blocks.value[5] = {
     coords: {
       x: 0,
-      y: 300
+      y: 300,
     },
     id: 5,
     parentId: 3,
-    type: 'ConditionActionHandler'
+    type: 'ConditionActionHandler',
   }
 })
 </script>
