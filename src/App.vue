@@ -17,7 +17,7 @@ import { onMounted, ref } from 'vue'
 const blocks = ref<Blocks>({})
 
 onMounted(() => {
-  const count = 0
+  const count = 10
   const perRow = 25
   let row = 0
 
@@ -27,52 +27,52 @@ onMounted(() => {
     }
     blocks.value[i] = {
       id: i,
-      parentId: null,
+      parentId: 0,
       type: 'EmailActionHandler',
-      x: (i % perRow) * 180,
-      y: row * 110,
+      x: (i % perRow) * 200,
+      y: row * 200,
     }
   }
 
-  blocks.value[1] = {
-    id: 1,
-    parentId: null,
-    type: 'EmailActionHandler',
-    x: 0,
-    y: -140,
-  }
-
-  blocks.value[2] = {
-    id: 2,
-    parentId: 1,
-    type: 'SMSActionHandler',
-    x: 0,
-    y: 0,
-  }
-
-  blocks.value[3] = {
-    id: 3,
-    parentId: 1,
-    type: 'PushActionHandler',
-    x: -200,
-    y: 0,
-  }
-
-  blocks.value[4] = {
-    id: 4,
-    parentId: 3,
-    type: 'ConditionActionHandler',
-    x: -200,
-    y: 140,
-  }
-
-  blocks.value[5] = {
-    id: 5,
-    parentId: 3,
-    type: 'ConditionActionHandler',
-    x: 0,
-    y: 140,
-  }
+  // blocks.value[1] = {
+  //   id: 1,
+  //   parentId: null,
+  //   type: 'EmailActionHandler',
+  //   x: 0,
+  //   y: -140,
+  // }
+  //
+  // blocks.value[2] = {
+  //   id: 2,
+  //   parentId: 1,
+  //   type: 'SMSActionHandler',
+  //   x: 0,
+  //   y: 0,
+  // }
+  //
+  // blocks.value[3] = {
+  //   id: 3,
+  //   parentId: 1,
+  //   type: 'PushActionHandler',
+  //   x: -200,
+  //   y: 0,
+  // }
+  //
+  // blocks.value[4] = {
+  //   id: 4,
+  //   parentId: 3,
+  //   type: 'ConditionActionHandler',
+  //   x: -200,
+  //   y: 140,
+  // }
+  //
+  // blocks.value[5] = {
+  //   id: 5,
+  //   parentId: 3,
+  //   type: 'ConditionActionHandler',
+  //   x: 0,
+  //   y: 140,
+  // }
 })
 </script>
 

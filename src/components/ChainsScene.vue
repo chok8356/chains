@@ -17,13 +17,13 @@
           :class="$style.blocks"
           ref="blocksEl">
           <div :class="$style.center"></div>
+          <ChainsLines :lines="lines"></ChainsLines>
+
           <ChainsSceneBlock
             :block="block"
             :dragging="block.id === draggingBlockId"
-            :height="BLOCK_SIZE.height"
             :key="block.id"
             :selected="selected[block.id]"
-            :width="BLOCK_SIZE.width"
             v-for="block in blocks"
             v-memo="[block, block.id === draggingBlockId, selected[block.id]]" />
         </div>
@@ -34,26 +34,13 @@
 
 <script setup lang="ts">
 import ChainsGrid from '@/components/ChainsGrid.vue'
+import ChainsLines from '@/components/ChainsLines.vue'
 import ChainsSceneBlock from '@/components/ChainsSceneBlock.vue'
 import { cloneDeep } from 'lodash-es'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { type Block, type Blocks, SceneEntityType } from './types'
-
-// calculate time 1000ms / 144ps = 6ms
-// const THROTTLE_TIME = 6
-
-const SCENE_SCALE = {
-  max: 2,
-  min: 0.1,
-}
-
-const ZOOM_INTENSITY = 0.2
-
-const BLOCK_SIZE = {
-  height: 98,
-  width: 168,
-}
+import { BLOCK_SIZE, SCENE_SCALE, ZOOM_INTENSITY } from './constants'
+import { type Block, type Blocks, type Line, type Lines, SceneEntityType } from './types'
 
 const props = withDefaults(
   defineProps<{
@@ -64,7 +51,7 @@ const props = withDefaults(
   },
 )
 
-const emit = defineEmits<{
+defineEmits<{
   (e: 'update:value', value: Blocks): void
 }>()
 
@@ -74,6 +61,8 @@ const captureEl = ref<HTMLDivElement | null>(null)
 const blocksEl = ref<HTMLDivElement | null>(null)
 
 const blocks = ref<Blocks>({})
+
+const lines = ref<Lines>({})
 
 const sceneOffset = ref<{ x: number; y: number }>({
   x: 0,
@@ -123,8 +112,9 @@ const mousemove = (e: MouseEvent) => {
     mouse.y = e.clientY
   }
   if (draggingBlockId.value !== null) {
-    blocks.value[draggingBlockId.value].x = (e.clientX - mouse.x) / scale.value
-    blocks.value[draggingBlockId.value].y = (e.clientY - mouse.y) / scale.value
+    const block = blocks.value[draggingBlockId.value]
+    block.x = (e.clientX - mouse.x) / scale.value
+    block.y = (e.clientY - mouse.y) / scale.value
   }
 }
 
@@ -153,6 +143,31 @@ const wheel = (e: WheelEvent) => {
   scale.value = newScale
   sceneOffset.value.x = mouseX - offsetX * newScale
   sceneOffset.value.y = mouseY - offsetY * newScale
+}
+
+const getLineId = (block: Block, parentBlock: Block) => {
+  return `${parentBlock.id}_${block.id}`
+}
+
+const getLine = (block: Block, parentBlock: Block): Line => {
+  return {
+    from: { x: parentBlock.x + BLOCK_SIZE.width / 2, y: parentBlock.y + BLOCK_SIZE.height },
+    to: { x: block.x + BLOCK_SIZE.width / 2, y: block.y },
+  }
+}
+
+const getLines = () => {
+  const result: Lines = {}
+  for (const id in blocks.value) {
+    const block = blocks.value[id]
+    if (block.parentId !== null) {
+      const parentBlock = blocks.value[block.parentId]
+      if (parentBlock) {
+        result[getLineId(block, parentBlock)] = getLine(block, parentBlock)
+      }
+    }
+  }
+  return result
 }
 
 // resize canvas
@@ -196,9 +211,26 @@ watch(
   { deep: true, immediate: true },
 )
 
+// update blocks connections
+const blocksRafId = ref<null | number>(null)
+
+watch(
+  () => blocks.value,
+  () => {
+    if (blocksRafId.value) {
+      cancelAnimationFrame(blocksRafId.value)
+    }
+    blocksRafId.value = requestAnimationFrame(() => {
+      lines.value = getLines()
+    })
+  },
+  { deep: true, immediate: true },
+)
+
 onMounted(async () => {
   await nextTick()
   blocks.value = cloneDeep(props.value)
+  lines.value = getLines()
   if (rootEl.value) {
     resizeObserver.observe(rootEl.value)
   }
@@ -270,6 +302,10 @@ onBeforeUnmount(() => {
   background-color: var(--color-red);
   border-radius: 50%;
   height: 12px;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
   width: 12px;
 }
 </style>

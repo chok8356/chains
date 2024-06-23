@@ -4,15 +4,19 @@
     height="100%"
     width="100%">
     <g
-      :key="lineId"
-      v-for="(line, lineId) in lines">
-      <path :d="getPath(line)" />
+      :key="line.id"
+      v-for="line in lines"
+      v-memo="[line]">
+      <path :d="getPathData(line)" />
     </g>
   </svg>
 </template>
 
 <script setup lang="ts">
-import type { Line, Lines } from './types'
+import type { Lines } from './types'
+
+// bending
+const COEFFICIENT = 0.25
 
 withDefaults(
   defineProps<{
@@ -23,13 +27,20 @@ withDefaults(
   },
 )
 
-const distance = ({ end, start }: Line) => {
-  return Math.sqrt((end.x - start.x) * (end.x - start.x) + (end.y - start.y) * (end.y - start.y))
-}
+const getPathData = ({
+  from,
+  to,
+}: {
+  from: { x: number; y: number }
+  to: { x: number; y: number }
+}) => {
+  const dx = to.x - from.x
+  const dy = to.y - from.y
+  const distance = Math.sqrt(dx * dx + dy * dy)
 
-const getPath = ({ end, start }: Line) => {
-  const dist = distance({ end, start }) * 0.25
-  return `M ${start.x}, ${start.y} C ${start.x}, ${start.y + dist}, ${end.x}, ${end.y - dist}, ${end.x}, ${end.y}`
+  const control1 = { x: from.x, y: from.y + distance * COEFFICIENT }
+  const control2 = { x: to.x, y: to.y - distance * COEFFICIENT }
+  return `M ${from.x},${from.y} C ${control1.x},${control1.y} ${control2.x},${control2.y} ${to.x},${to.y}`
 }
 </script>
 

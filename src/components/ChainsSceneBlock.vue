@@ -32,15 +32,15 @@
 import { colord } from 'colord'
 import { computed, ref, watch } from 'vue'
 
-import { type Block, getBlockSettings, SceneEntityType } from './types'
+import { BLOCK_SIZE } from './constants'
+import { type Block, SceneEntityType } from './types'
+import { getBlockSettings } from './utils'
 
 const props = withDefaults(
   defineProps<{
     block: Block
     dragging: boolean
-    height: number
     selected: boolean
-    width: number
   }>(),
   {
     block: () => ({
@@ -51,9 +51,7 @@ const props = withDefaults(
       y: 0,
     }),
     dragging: false,
-    height: 98,
     selected: false,
-    width: 168,
   },
 )
 
@@ -66,8 +64,8 @@ const style = computed(() => {
   return {
     borderColor: props.selected ? settings.color : 'transparent',
     boxShadow: props.dragging ? `0px 21px 28px ${shadowColor}` : '',
-    height: `${props.height}px`,
-    width: `${props.width}px`,
+    height: `${BLOCK_SIZE.height}px`,
+    width: `${BLOCK_SIZE.width}px`,
   }
 })
 
