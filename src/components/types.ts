@@ -31,14 +31,10 @@ export const enum SceneEntityType {
 }
 
 export interface Line {
-  from: {
-    x: number
-    y: number
-  }
-  to: {
-    x: number
-    y: number
-  }
+  x1: number
+  x2: number
+  y1: number
+  y2: number
 }
 
 export type Lines = Record<string, Line>

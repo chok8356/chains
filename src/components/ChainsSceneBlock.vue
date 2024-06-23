@@ -9,7 +9,6 @@
     ]"
     :data-type="SceneEntityType.Block"
     :id="String(block.id)"
-    :style="style"
     ref="blockEl">
     <div
       :class="$style.header"
@@ -30,7 +29,7 @@
 
 <script setup lang="ts">
 import { colord } from 'colord'
-import { computed, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 
 import { type Block, SceneEntityType } from './types'
 import { getBlockSettings } from './utils'
@@ -57,31 +56,28 @@ const props = withDefaults(
 const blockEl = ref<HTMLDivElement | null>(null)
 
 const settings = getBlockSettings(props.block)
+const shadowColor = colord(settings.color).alpha(0.2).toRgbString()
 
-const style = computed(() => {
-  const shadowColor = colord(settings.color).alpha(0.2).toRgbString()
-  return {
-    borderColor: props.selected ? settings.color : 'transparent',
-    boxShadow: props.dragging ? `0px 21px 28px ${shadowColor}` : '',
+const animate = () => {
+  if (blockEl.value) {
+    blockEl.value.style.transform = `translate3d(${props.block.x}px, ${props.block.y}px, 0)`
+    blockEl.value.style.borderColor = props.selected ? settings.color : 'transparent'
+    blockEl.value.style.boxShadow = props.dragging ? `0px 21px 28px ${shadowColor}` : ''
   }
-})
+}
 
 const rafId = ref<null | number>(null)
 
 watch(
-  () => props.block,
+  () => props,
   () => {
-    if (rafId.value) {
-      cancelAnimationFrame(rafId.value)
-    }
-    rafId.value = requestAnimationFrame(() => {
-      if (blockEl.value) {
-        blockEl.value.style.transform = `translate3d(${props.block.x}px, ${props.block.y}px, 0)`
-      }
-    })
+    if (rafId.value) cancelAnimationFrame(rafId.value)
+    rafId.value = requestAnimationFrame(animate)
   },
-  { deep: true, immediate: true },
+  { deep: true, flush: 'post' },
 )
+
+onMounted(animate)
 </script>
 
 <style module>

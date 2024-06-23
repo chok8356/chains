@@ -35,10 +35,10 @@
 import ChainsGrid from '@/components/ChainsGrid.vue'
 import ChainsLines from '@/components/ChainsLines.vue'
 import ChainsSceneBlock from '@/components/ChainsSceneBlock.vue'
-import { cloneDeep, throttle } from 'lodash-es'
+import { throttle } from 'lodash-es'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { BLOCK_SIZE, SCENE_SCALE, ZOOM_INTENSITY } from './constants'
+import { BLOCK_SIZE, SCENE_SCALE, THROTTLE, ZOOM_INTENSITY } from './constants'
 import { type Block, type Blocks, type Lines, SceneEntityType } from './types'
 
 const props = withDefaults(
@@ -59,11 +59,13 @@ const canvasEl = ref<HTMLDivElement | null>(null)
 const captureEl = ref<HTMLDivElement | null>(null)
 const blocksEl = ref<HTMLDivElement | null>(null)
 
+const rafId = ref<null | number>(null)
+
 const blocks = ref<Blocks>({})
 
 const lines = ref<Lines>({})
 
-const sceneOffset = ref<{ x: number; y: number }>({
+const sceneOffset = ref({
   x: 0,
   y: 0,
 })
@@ -76,19 +78,26 @@ const draggingBlockId = ref<Block['id'] | null>(null)
 
 const selected = ref<Record<Block['id'], true>>({})
 
-const mouse = {
+const canvasPosition = ref({
+  left: 0,
+  top: 0,
+})
+
+const mouse = ref({
   x: 0,
   y: 0,
-}
+})
 
 // events
 const mousedown = throttle((e: MouseEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
   const target = e.target as HTMLElement
   if (target === captureEl.value) {
     selected.value = {}
     dragging.value = true
-    mouse.x = e.clientX
-    mouse.y = e.clientY
+    mouse.value.x = e.clientX
+    mouse.value.y = e.clientY
   } else {
     const closestEl = target.closest('[data-type]') as HTMLElement | null
     if (closestEl) {
@@ -96,29 +105,34 @@ const mousedown = throttle((e: MouseEvent) => {
       const type = Number(closestEl.dataset.type)
       if (type === SceneEntityType.Block) {
         draggingBlockId.value = id
-        mouse.x = e.clientX - blocks.value[id].x * scale.value
-        mouse.y = e.clientY - blocks.value[id].y * scale.value
+        mouse.value.x = e.clientX - blocks.value[id].x * scale.value
+        mouse.value.y = e.clientY - blocks.value[id].y * scale.value
       }
     }
   }
-}, 6)
+}, THROTTLE)
 
 const mousemove = throttle((e: MouseEvent) => {
+  e.preventDefault()
   e.stopPropagation()
   if (dragging.value) {
-    sceneOffset.value.x += e.clientX - mouse.x
-    sceneOffset.value.y += e.clientY - mouse.y
-    mouse.x = e.clientX
-    mouse.y = e.clientY
+    sceneOffset.value.x += e.clientX - mouse.value.x
+    sceneOffset.value.y += e.clientY - mouse.value.y
+    mouse.value.x = e.clientX
+    mouse.value.y = e.clientY
   }
   if (draggingBlockId.value !== null) {
+    blocks.value[draggingBlockId.value].x = (e.clientX - mouse.value.x) / scale.value
+    blocks.value[draggingBlockId.value].y = (e.clientY - mouse.value.y) / scale.value
+
     const block = blocks.value[draggingBlockId.value]
-    block.x = (e.clientX - mouse.x) / scale.value
-    block.y = (e.clientY - mouse.y) / scale.value
+    if (rafId.value) cancelAnimationFrame(rafId.value)
+    rafId.value = requestAnimationFrame(() => animateLines(block))
   }
-}, 6)
+}, THROTTLE)
 
 const mouseup = throttle((e: MouseEvent) => {
+  e.preventDefault()
   e.stopPropagation()
   selected.value = {}
   if (draggingBlockId.value !== null) {
@@ -126,7 +140,7 @@ const mouseup = throttle((e: MouseEvent) => {
   }
   dragging.value = false
   draggingBlockId.value = null
-}, 6)
+}, THROTTLE)
 
 const wheel = throttle((e: WheelEvent) => {
   e.preventDefault()
@@ -137,80 +151,118 @@ const wheel = throttle((e: WheelEvent) => {
     Math.max(Math.exp(Math.log(oldScale) + Math.sign(-e.deltaY) * ZOOM_INTENSITY), SCENE_SCALE.min),
     SCENE_SCALE.max,
   )
-  const mouseX = e.clientX - canvasEl.value.getBoundingClientRect().left
-  const mouseY = e.clientY - canvasEl.value.getBoundingClientRect().top
+  const mouseX = e.clientX - canvasPosition.value.left
+  const mouseY = e.clientY - canvasPosition.value.top
   const offsetX = (mouseX - sceneOffset.value.x) / oldScale
   const offsetY = (mouseY - sceneOffset.value.y) / oldScale
   scale.value = newScale
   sceneOffset.value.x = mouseX - offsetX * newScale
   sceneOffset.value.y = mouseY - offsetY * newScale
-}, 6)
+}, THROTTLE)
 
-const updateLines = () => {
-  for (const id in blocks.value) {
-    const block = blocks.value[id]
+const getLineId = (block: Block, parentBlock: Block) => {
+  return `${parentBlock.id}_${block.id}`
+}
+
+const getLine = (block: Block, parentBlock: Block) => {
+  return {
+    x1: parentBlock.x + BLOCK_SIZE.width / 2,
+    x2: block.x + BLOCK_SIZE.width / 2,
+    y1: parentBlock.y + BLOCK_SIZE.height,
+    y2: block.y,
+  }
+}
+
+const getLines = (blocks: Blocks) => {
+  const result: Lines = {}
+  for (const id in blocks) {
+    const block = blocks[id]
     if (block.parentId !== null) {
-      const parentBlock = blocks.value[block.parentId]
+      const parentBlock = blocks[block.parentId]
       if (parentBlock) {
-        lines.value[`${parentBlock.id}_${block.id}`] = {
-          from: { x: parentBlock.x + BLOCK_SIZE.width / 2, y: parentBlock.y + BLOCK_SIZE.height },
-          to: { x: block.x + BLOCK_SIZE.width / 2, y: block.y },
+        result[getLineId(block, parentBlock)] = getLine(block, parentBlock)
+      }
+    }
+  }
+  return result
+}
+
+const blocksReverseDependencyTree = ref<Record<number, number[]>>({})
+
+const getBlocksReverseDependencyTree = (blocks: Blocks) => {
+  const result: Record<number, number[]> = {}
+  for (const blockId in blocks) {
+    if (blockId in blocks) {
+      result[Number(blockId)] = []
+    }
+  }
+  for (const blockId in blocks) {
+    if (blockId in blocks) {
+      const block = blocks[blockId]
+      if (block.parentId !== null) {
+        if (!result[block.parentId]) {
+          result[block.parentId] = []
         }
+        result[block.parentId].push(block.id)
+      }
+    }
+  }
+  return result
+}
+
+// update line position
+const animateLines = (block: Block) => {
+  if (block.parentId !== null && blocks.value[block.parentId]) {
+    lines.value[getLineId(block, blocks.value[block.parentId])] = getLine(
+      block,
+      blocks.value[block.parentId],
+    )
+  }
+
+  const childIds = blocksReverseDependencyTree.value[block.id]
+  if (childIds.length) {
+    for (const childId of childIds) {
+      if (blocks.value[childId]) {
+        lines.value[getLineId(blocks.value[childId], block)] = getLine(blocks.value[childId], block)
       }
     }
   }
 }
 
-const rafId = ref<null | number>(null)
-
 // update scene position
-// const sceneRafId = ref<null | number>(null)
-
+const animateScene = () => {
+  if (blocksEl.value) {
+    blocksEl.value.style.transform = `translate3d(${sceneOffset.value.x}px, ${sceneOffset.value.y}px, 0) scale(${scale.value})`
+  }
+}
 watch(
   () => sceneOffset.value,
   () => {
-    if (rafId.value) {
-      cancelAnimationFrame(rafId.value)
-    }
-    rafId.value = requestAnimationFrame(() => {
-      if (blocksEl.value) {
-        blocksEl.value.style.transform = `translate3d(${sceneOffset.value.x}px, ${sceneOffset.value.y}px, 0) scale(${scale.value})`
-      }
-    })
+    if (rafId.value) cancelAnimationFrame(rafId.value)
+    rafId.value = requestAnimationFrame(animateScene)
   },
-  { deep: true, immediate: true },
-)
-
-// update blocks connections
-// const blocksRafId = ref<null | number>(null)
-
-watch(
-  () => blocks.value,
-  () => {
-    if (rafId.value) {
-      cancelAnimationFrame(rafId.value)
-    }
-    rafId.value = requestAnimationFrame(() => {
-      updateLines()
-    })
-  },
-  { deep: true, immediate: true },
+  { deep: true, flush: 'post' },
 )
 
 onMounted(async () => {
   await nextTick()
-  blocks.value = cloneDeep(props.value)
-  updateLines()
+  blocks.value = { ...props.value }
+  lines.value = getLines(blocks.value)
+  blocksReverseDependencyTree.value = getBlocksReverseDependencyTree(blocks.value)
   if (canvasEl.value) {
+    const { left, top } = canvasEl.value.getBoundingClientRect()
+    canvasPosition.value.left = left
+    canvasPosition.value.top = top
     sceneOffset.value.x = canvasEl.value.clientWidth / 2
     sceneOffset.value.y = canvasEl.value.clientHeight / 2
   }
   if (captureEl.value) {
-    captureEl.value.addEventListener('mousedown', mousedown)
-    captureEl.value.addEventListener('wheel', wheel, { capture: true, passive: false })
-    document.documentElement.addEventListener('mousemove', mousemove)
-    document.documentElement.addEventListener('mouseup', mouseup)
+    captureEl.value.addEventListener('mousedown', mousedown, true)
+    captureEl.value.addEventListener('wheel', wheel, true)
+    document.documentElement.addEventListener('mousemove', mousemove, true)
+    document.documentElement.addEventListener('mouseup', mouseup, true)
   }
+  animateScene()
 })
 
 onBeforeUnmount(() => {

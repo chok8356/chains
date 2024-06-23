@@ -9,3 +9,6 @@ export const BLOCK_SIZE = {
   height: 98,
   width: 168,
 }
+
+// 1000ms / 144fps = 6ms
+export const THROTTLE = 6
