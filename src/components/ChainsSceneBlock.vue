@@ -7,7 +7,7 @@
         [$style.selected]: selected,
       },
     ]"
-    :data-type="SceneEntitityType.Block"
+    :data-type="SceneEntityType.Block"
     :id="String(block.id)"
     :style="style"
     ref="blockEl">
@@ -32,7 +32,7 @@
 import { colord } from 'colord'
 import { computed, ref, watch } from 'vue'
 
-import { type Block, getBlockSettings, SceneEntitityType } from './types'
+import { type Block, getBlockSettings, SceneEntityType } from './types'
 
 const props = withDefaults(
   defineProps<{

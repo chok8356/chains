@@ -11,7 +11,7 @@
         <!--grid-->
         <ChainsGrid
           :class="$style.grid"
-          :scale="scene.scale" />
+          :scale="scale" />
 
         <div
           :class="$style.blocks"
@@ -38,10 +38,15 @@ import ChainsSceneBlock from '@/components/ChainsSceneBlock.vue'
 import { cloneDeep } from 'lodash-es'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { type Block, type Blocks, type Scene, SceneEntitityType } from './types'
+import { type Block, type Blocks, SceneEntityType } from './types'
 
 // calculate time 1000ms / 144ps = 6ms
 const THROTTLE_TIME = 6
+
+const SCENE_SCALE = {
+  max: 3,
+  min: 0.1,
+}
 
 const BLOCK_SIZE = {
   height: 98,
@@ -68,19 +73,20 @@ const blocksEl = ref<HTMLDivElement | null>(null)
 
 const blocks = ref<Blocks>({})
 
-const scene = ref<Scene>({
-  scale: 1,
+const sceneOffset = ref<{ x: number; y: number }>({
   x: 0,
   y: 0,
 })
+
+const scale = ref(1)
 
 const dragging = ref(false)
 const draggingBlockId = ref<Block['id'] | null>(null)
 
-const mouse = ref<{ x: number; y: number }>({
+const mouse = {
   x: 0,
   y: 0,
-})
+}
 
 // events
 const mousedown = (e: MouseEvent) => {
@@ -88,17 +94,17 @@ const mousedown = (e: MouseEvent) => {
 
   if (target === captureEl.value) {
     dragging.value = true
-    mouse.value.x = e.clientX - scene.value.x
-    mouse.value.y = e.clientY - scene.value.y
+    mouse.x = e.clientX
+    mouse.y = e.clientY
   } else {
     const closestEl = target.closest('[data-type]') as HTMLElement | null
     if (closestEl) {
       const id = Number(closestEl.id)
       const type = Number(closestEl.dataset.type)
-      if (type === SceneEntitityType.Block) {
+      if (type === SceneEntityType.Block) {
         draggingBlockId.value = id
-        mouse.value.x = e.clientX - blocks.value[draggingBlockId.value].x
-        mouse.value.y = e.clientY - blocks.value[draggingBlockId.value].y
+        mouse.x = e.clientX - blocks.value[id].x * scale.value
+        mouse.y = e.clientY - blocks.value[id].y * scale.value
       }
     }
   }
@@ -106,18 +112,47 @@ const mousedown = (e: MouseEvent) => {
 
 const mousemove = (e: MouseEvent) => {
   if (dragging.value) {
-    scene.value.x = e.clientX - mouse.value.x
-    scene.value.y = e.clientY - mouse.value.y
+    sceneOffset.value.x += e.clientX - mouse.x
+    sceneOffset.value.y += e.clientY - mouse.y
+    mouse.x = e.clientX
+    mouse.y = e.clientY
   }
   if (draggingBlockId.value !== null) {
-    blocks.value[draggingBlockId.value].x = e.clientX - mouse.value.x
-    blocks.value[draggingBlockId.value].y = e.clientY - mouse.value.y
+    blocks.value[draggingBlockId.value].x = (e.clientX - mouse.x) / scale.value
+    blocks.value[draggingBlockId.value].y = (e.clientY - mouse.y) / scale.value
   }
 }
 
 const mouseup = () => {
   dragging.value = false
   draggingBlockId.value = null
+}
+
+const wheel = (e: WheelEvent) => {
+  e.preventDefault()
+
+  if (!canvasEl.value) return
+
+  const zoomIntensity = 0.001
+  const oldScale = scale.value
+  const newScale = Math.min(
+    Math.max(SCENE_SCALE.min, oldScale - e.deltaY * zoomIntensity),
+    SCENE_SCALE.max,
+  )
+
+  const mouseX = e.clientX - canvasEl.value.getBoundingClientRect().left
+  const mouseY = e.clientY - canvasEl.value.getBoundingClientRect().top
+
+  // Вычисляем координаты курсора относительно центра контейнера
+  const offsetX = (mouseX - sceneOffset.value.x) / oldScale
+  const offsetY = (mouseY - sceneOffset.value.y) / oldScale
+
+  // Обновляем масштаб
+  scale.value = newScale
+
+  // Корректируем координаты сцены, чтобы сцена оставалась на месте курсора
+  sceneOffset.value.x = mouseX - offsetX * newScale
+  sceneOffset.value.y = mouseY - offsetY * newScale
 }
 
 // resize canvas
@@ -147,14 +182,14 @@ const resizeObserver = new ResizeObserver(() => {
 const sceneRafId = ref<null | number>(null)
 
 watch(
-  () => scene.value,
+  () => sceneOffset.value,
   () => {
     if (sceneRafId.value) {
       cancelAnimationFrame(sceneRafId.value)
     }
     sceneRafId.value = requestAnimationFrame(() => {
       if (blocksEl.value) {
-        blocksEl.value.style.transform = `translate3d(${scene.value.x}px, ${scene.value.y}px, 0) scale(${scene.value.scale})`
+        blocksEl.value.style.transform = `translate3d(${sceneOffset.value.x}px, ${sceneOffset.value.y}px, 0) scale(${scale.value})`
       }
     })
   },
@@ -170,8 +205,14 @@ onMounted(async () => {
     resizeObserver.observe(rootEl.value)
   }
 
+  if (canvasEl.value) {
+    sceneOffset.value.x = canvasEl.value.clientWidth / 2
+    sceneOffset.value.y = canvasEl.value.clientHeight / 2
+  }
+
   if (captureEl.value) {
     captureEl.value.addEventListener('mousedown', mousedown)
+    captureEl.value.addEventListener('wheel', wheel)
     document.documentElement.addEventListener('mousemove', mousemove)
     document.documentElement.addEventListener('mouseup', mouseup)
   }
@@ -180,6 +221,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (captureEl.value) {
     captureEl.value.removeEventListener('mousedown', mousedown)
+    captureEl.value.removeEventListener('wheel', wheel)
     document.documentElement.removeEventListener('mousemove', mousemove)
     document.documentElement.removeEventListener('mouseup', mouseup)
   }
@@ -219,10 +261,11 @@ onBeforeUnmount(() => {
 
 .blocks {
   height: 0;
-  left: 50%;
+  left: 0;
   position: absolute;
-  top: 50%;
-  transform: translateZ(0);
+  top: 0;
+  transform: translate3d(0, 0, 0);
+  transform-origin: top left;
   width: 0;
   will-change: contents;
 }
@@ -232,13 +275,5 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   height: 12px;
   width: 12px;
-}
-
-.capture {
-  display: block;
-  inset: 0;
-  overflow: initial;
-  pointer-events: initial;
-  position: absolute;
 }
 </style>

@@ -18,7 +18,7 @@ const blocks = ref<Blocks>({})
 
 onMounted(() => {
   const count = 0
-  const perRow = 100
+  const perRow = 25
   let row = 0
 
   for (let i = 0; i < count; i++) {
