@@ -3,11 +3,12 @@
     :class="$style.root"
     height="100%"
     width="100%">
-    <g
-      :key="line.id"
-      v-for="line in lines"
-      v-memo="[line]">
-      <path :d="getPathData(line)" />
+    <g>
+      <path
+        :d="getPathData(line)"
+        :key="line.id"
+        v-for="line in lines"
+        v-memo="[line.id, line.from.x, line.from.y, line.to.x, line.to.y]" />
     </g>
   </svg>
 </template>

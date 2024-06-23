@@ -8,7 +8,6 @@
       <div
         :class="$style.renderer"
         ref="captureEl">
-        <!--grid-->
         <ChainsGrid
           :class="$style.grid"
           :scale="scale" />
@@ -17,7 +16,11 @@
           :class="$style.blocks"
           ref="blocksEl">
           <div :class="$style.center"></div>
-          <ChainsLines :lines="lines"></ChainsLines>
+          <ChainsLine
+            :key="line.id"
+            :line="line"
+            v-for="line in lines"
+            v-memo="[line.id, line.from.x, line.from.y, line.to.x, line.to.y]" />
 
           <ChainsSceneBlock
             :block="block"
@@ -25,7 +28,7 @@
             :key="block.id"
             :selected="selected[block.id]"
             v-for="block in blocks"
-            v-memo="[block, block.id === draggingBlockId, selected[block.id]]" />
+            v-memo="[block.x, block.y, block.id === draggingBlockId, selected[block.id]]" />
         </div>
       </div>
     </div>
@@ -34,7 +37,7 @@
 
 <script setup lang="ts">
 import ChainsGrid from '@/components/ChainsGrid.vue'
-import ChainsLines from '@/components/ChainsLines.vue'
+import ChainsLine from '@/components/ChainsLine.vue'
 import ChainsSceneBlock from '@/components/ChainsSceneBlock.vue'
 import { cloneDeep } from 'lodash-es'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -72,6 +75,7 @@ const sceneOffset = ref<{ x: number; y: number }>({
 const scale = ref(1)
 
 const dragging = ref(false)
+
 const draggingBlockId = ref<Block['id'] | null>(null)
 
 const selected = ref<Record<Block['id'], true>>({})
@@ -115,6 +119,19 @@ const mousemove = (e: MouseEvent) => {
     const block = blocks.value[draggingBlockId.value]
     block.x = (e.clientX - mouse.x) / scale.value
     block.y = (e.clientY - mouse.y) / scale.value
+
+    // if (block.parentId !== null) {
+    //   const parentBlock = blocks.value[block.parentId]
+    //   lines.value[getLineId(block, parentBlock)] = getLine(block, parentBlock)
+    // }
+    //
+    // const childIds = blocksReverseDependencyTree.value[block.id]
+    // if (childIds.length) {
+    //   for (const childId of childIds) {
+    //     const childBlock = blocks.value[childId]
+    //     lines.value[getLineId(childBlock, block)] = getLine(childBlock, block)
+    //   }
+    // }
   }
 }
 
@@ -152,6 +169,7 @@ const getLineId = (block: Block, parentBlock: Block) => {
 const getLine = (block: Block, parentBlock: Block): Line => {
   return {
     from: { x: parentBlock.x + BLOCK_SIZE.width / 2, y: parentBlock.y + BLOCK_SIZE.height },
+    id: getLineId(block, parentBlock),
     to: { x: block.x + BLOCK_SIZE.width / 2, y: block.y },
   }
 }
@@ -169,6 +187,32 @@ const getLines = () => {
   }
   return result
 }
+
+// const blocksReverseDependencyTree = ref<Record<number, number[]>>({})
+
+// const getBlocksReverseDependencyTree = (blocks: Blocks) => {
+//   const result: Record<number, number[]> = {}
+//
+//   for (const blockId in blocks) {
+//     if (blockId in blocks) {
+//       result[Number(blockId)] = []
+//     }
+//   }
+//
+//   for (const blockId in blocks) {
+//     if (blockId in blocks) {
+//       const block = blocks[blockId]
+//       if (block.parentId !== null) {
+//         if (!result[block.parentId]) {
+//           result[block.parentId] = []
+//         }
+//         result[block.parentId].push(block.id)
+//       }
+//     }
+//   }
+//
+//   return result
+// }
 
 // resize canvas
 const canvasSize = ref<{ height: number; width: number }>({
@@ -230,6 +274,7 @@ watch(
 onMounted(async () => {
   await nextTick()
   blocks.value = cloneDeep(props.value)
+  // blocksReverseDependencyTree.value = getBlocksReverseDependencyTree(blocks.value)
   lines.value = getLines()
   if (rootEl.value) {
     resizeObserver.observe(rootEl.value)

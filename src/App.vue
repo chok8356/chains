@@ -17,8 +17,8 @@ import { onMounted, ref } from 'vue'
 const blocks = ref<Blocks>({})
 
 onMounted(() => {
-  const count = 10
-  const perRow = 25
+  const count = 1000
+  const perRow = 100
   let row = 0
 
   for (let i = 0; i < count; i++) {
@@ -27,6 +27,7 @@ onMounted(() => {
     }
     blocks.value[i] = {
       id: i,
+      // parentId: i - perRow,
       parentId: 0,
       type: 'EmailActionHandler',
       x: (i % perRow) * 200,

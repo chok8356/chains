@@ -69,15 +69,15 @@ const style = computed(() => {
   }
 })
 
-const blockRafId = ref<null | number>(null)
+const rafId = ref<null | number>(null)
 
 watch(
   () => props.block,
   () => {
-    if (blockRafId.value) {
-      cancelAnimationFrame(blockRafId.value)
+    if (rafId.value) {
+      cancelAnimationFrame(rafId.value)
     }
-    blockRafId.value = requestAnimationFrame(() => {
+    rafId.value = requestAnimationFrame(() => {
       if (blockEl.value) {
         blockEl.value.style.transform = `translate3d(${props.block.x}px, ${props.block.y}px, 0)`
       }

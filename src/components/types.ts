@@ -35,6 +35,7 @@ export interface Line {
     x: number
     y: number
   }
+  id: string
   to: {
     x: number
     y: number
