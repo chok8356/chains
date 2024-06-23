@@ -7,8 +7,10 @@
         [$style.selected]: selected,
       },
     ]"
+    :data-type="SceneEntitityType.Block"
+    :id="String(block.id)"
     :style="style"
-    ref="rootEl">
+    ref="blockEl">
     <div
       :class="$style.header"
       :style="{ backgroundColor: settings.color }">
@@ -28,48 +30,63 @@
 
 <script setup lang="ts">
 import { colord } from 'colord'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import { type Block, getBlockSettings } from './types'
+import { type Block, getBlockSettings, SceneEntitityType } from './types'
 
 const props = withDefaults(
   defineProps<{
     block: Block
     dragging: boolean
+    height: number
     selected: boolean
+    width: number
   }>(),
   {
     block: () => ({
-      coords: {
-        x: 0,
-        y: 0,
-      },
       id: -1,
       parentId: null,
       type: 'StatusActionHandler',
+      x: 0,
+      y: 0,
     }),
     dragging: false,
+    height: 98,
     selected: false,
+    width: 168,
   },
 )
 
-const rootEl = ref<HTMLDivElement | null>(null)
+const blockEl = ref<HTMLDivElement | null>(null)
 
 const settings = getBlockSettings(props.block)
 
 const style = computed(() => {
-  const { x, y } = props.block
   const shadowColor = colord(settings.color).alpha(0.2).toRgbString()
   return {
     borderColor: props.selected ? settings.color : 'transparent',
     boxShadow: props.dragging ? `0px 21px 28px ${shadowColor}` : '',
-    transform: `translate3d(${x}px, ${y}px, 0)`,
+    height: `${props.height}px`,
+    width: `${props.width}px`,
   }
 })
 
-defineExpose({
-  rootEl,
-})
+const blockRafId = ref<null | number>(null)
+
+watch(
+  () => props.block,
+  () => {
+    if (blockRafId.value) {
+      cancelAnimationFrame(blockRafId.value)
+    }
+    blockRafId.value = requestAnimationFrame(() => {
+      if (blockEl.value) {
+        blockEl.value.style.transform = `translate3d(${props.block.x}px, ${props.block.y}px, 0)`
+      }
+    })
+  },
+  { deep: true, immediate: true },
+)
 </script>
 
 <style module>
@@ -83,6 +100,7 @@ defineExpose({
   overflow: hidden;
   padding: 4px;
   position: absolute;
+  transform: translateZ(0);
   transform-origin: top left;
   transition:
     box-shadow 200ms,

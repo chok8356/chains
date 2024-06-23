@@ -26,6 +26,10 @@ export interface Block {
 
 export type Blocks = Record<Block['id'], Block>
 
+export const enum SceneEntitityType {
+  Block,
+}
+
 export interface Scene {
   scale: number
   x: number

@@ -3,7 +3,7 @@
     <div :class="$style.sidebar">Sidebar</div>
     <div :class="$style.header">Header</div>
     <div :class="$style.scene">
-      <ChainsScene v-model:blocks="blocks" />
+      <ChainsScene v-model:value="blocks" />
     </div>
   </div>
 </template>
@@ -18,7 +18,7 @@ const blocks = ref<Blocks>({})
 
 onMounted(() => {
   const count = 0
-  const perRow = 25
+  const perRow = 100
   let row = 0
 
   for (let i = 0; i < count; i++) {
@@ -39,7 +39,7 @@ onMounted(() => {
     parentId: null,
     type: 'EmailActionHandler',
     x: 0,
-    y: -300,
+    y: -140,
   }
 
   blocks.value[2] = {
@@ -62,8 +62,8 @@ onMounted(() => {
     id: 4,
     parentId: 3,
     type: 'ConditionActionHandler',
-    x: -300,
-    y: 300,
+    x: -200,
+    y: 140,
   }
 
   blocks.value[5] = {
@@ -71,7 +71,7 @@ onMounted(() => {
     parentId: 3,
     type: 'ConditionActionHandler',
     x: 0,
-    y: 300,
+    y: 140,
   }
 })
 </script>
