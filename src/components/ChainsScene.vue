@@ -22,10 +22,10 @@
             :dragging="block.id === draggingBlockId"
             :height="BLOCK_SIZE.height"
             :key="block.id"
-            :selected="false"
+            :selected="selected[block.id]"
             :width="BLOCK_SIZE.width"
             v-for="block in blocks"
-            v-memo="[block, block.id === draggingBlockId]" />
+            v-memo="[block, block.id === draggingBlockId, selected[block.id]]" />
         </div>
       </div>
     </div>
@@ -41,12 +41,14 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { type Block, type Blocks, SceneEntityType } from './types'
 
 // calculate time 1000ms / 144ps = 6ms
-const THROTTLE_TIME = 6
+// const THROTTLE_TIME = 6
 
 const SCENE_SCALE = {
-  max: 3,
+  max: 2,
   min: 0.1,
 }
+
+const ZOOM_INTENSITY = 0.2
 
 const BLOCK_SIZE = {
   height: 98,
@@ -83,6 +85,8 @@ const scale = ref(1)
 const dragging = ref(false)
 const draggingBlockId = ref<Block['id'] | null>(null)
 
+const selected = ref<Record<Block['id'], true>>({})
+
 const mouse = {
   x: 0,
   y: 0,
@@ -93,6 +97,7 @@ const mousedown = (e: MouseEvent) => {
   const target = e.target as HTMLElement
 
   if (target === captureEl.value) {
+    selected.value = {}
     dragging.value = true
     mouse.x = e.clientX
     mouse.y = e.clientY
@@ -124,33 +129,28 @@ const mousemove = (e: MouseEvent) => {
 }
 
 const mouseup = () => {
+  selected.value = {}
+  if (draggingBlockId.value !== null) {
+    selected.value[draggingBlockId.value] = true
+  }
   dragging.value = false
   draggingBlockId.value = null
 }
 
 const wheel = (e: WheelEvent) => {
   e.preventDefault()
-
+  e.stopPropagation()
   if (!canvasEl.value) return
-
-  const zoomIntensity = 0.001
   const oldScale = scale.value
   const newScale = Math.min(
-    Math.max(SCENE_SCALE.min, oldScale - e.deltaY * zoomIntensity),
+    Math.max(Math.exp(Math.log(oldScale) + Math.sign(-e.deltaY) * ZOOM_INTENSITY), SCENE_SCALE.min),
     SCENE_SCALE.max,
   )
-
   const mouseX = e.clientX - canvasEl.value.getBoundingClientRect().left
   const mouseY = e.clientY - canvasEl.value.getBoundingClientRect().top
-
-  // Вычисляем координаты курсора относительно центра контейнера
   const offsetX = (mouseX - sceneOffset.value.x) / oldScale
   const offsetY = (mouseY - sceneOffset.value.y) / oldScale
-
-  // Обновляем масштаб
   scale.value = newScale
-
-  // Корректируем координаты сцены, чтобы сцена оставалась на месте курсора
   sceneOffset.value.x = mouseX - offsetX * newScale
   sceneOffset.value.y = mouseY - offsetY * newScale
 }
@@ -198,21 +198,17 @@ watch(
 
 onMounted(async () => {
   await nextTick()
-
   blocks.value = cloneDeep(props.value)
-
   if (rootEl.value) {
     resizeObserver.observe(rootEl.value)
   }
-
   if (canvasEl.value) {
     sceneOffset.value.x = canvasEl.value.clientWidth / 2
     sceneOffset.value.y = canvasEl.value.clientHeight / 2
   }
-
   if (captureEl.value) {
     captureEl.value.addEventListener('mousedown', mousedown)
-    captureEl.value.addEventListener('wheel', wheel)
+    captureEl.value.addEventListener('wheel', wheel, { capture: true, passive: false })
     document.documentElement.addEventListener('mousemove', mousemove)
     document.documentElement.addEventListener('mouseup', mouseup)
   }
