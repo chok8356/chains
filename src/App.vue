@@ -17,8 +17,11 @@ import { onMounted, ref } from 'vue'
 const blocks = ref<Blocks>({})
 
 onMounted(() => {
-  const count = 1000
-  const perRow = 100
+  fillScene(1000)
+  // fillSceneCustom()
+})
+
+const fillScene = (count = 0, perRow = 25) => {
   let row = 0
 
   for (let i = 0; i < count; i++) {
@@ -34,47 +37,49 @@ onMounted(() => {
       y: row * 200,
     }
   }
+}
 
-  // blocks.value[1] = {
-  //   id: 1,
-  //   parentId: null,
-  //   type: 'EmailActionHandler',
-  //   x: 0,
-  //   y: -140,
-  // }
-  //
-  // blocks.value[2] = {
-  //   id: 2,
-  //   parentId: 1,
-  //   type: 'SMSActionHandler',
-  //   x: 0,
-  //   y: 0,
-  // }
-  //
-  // blocks.value[3] = {
-  //   id: 3,
-  //   parentId: 1,
-  //   type: 'PushActionHandler',
-  //   x: -200,
-  //   y: 0,
-  // }
-  //
-  // blocks.value[4] = {
-  //   id: 4,
-  //   parentId: 3,
-  //   type: 'ConditionActionHandler',
-  //   x: -200,
-  //   y: 140,
-  // }
-  //
-  // blocks.value[5] = {
-  //   id: 5,
-  //   parentId: 3,
-  //   type: 'ConditionActionHandler',
-  //   x: 0,
-  //   y: 140,
-  // }
-})
+const fillSceneCustom = () => {
+  blocks.value[1] = {
+    id: 1,
+    parentId: null,
+    type: 'EmailActionHandler',
+    x: 0,
+    y: -140,
+  }
+
+  blocks.value[2] = {
+    id: 2,
+    parentId: 1,
+    type: 'SMSActionHandler',
+    x: 0,
+    y: 0,
+  }
+
+  blocks.value[3] = {
+    id: 3,
+    parentId: 1,
+    type: 'PushActionHandler',
+    x: -200,
+    y: 0,
+  }
+
+  blocks.value[4] = {
+    id: 4,
+    parentId: 3,
+    type: 'ConditionActionHandler',
+    x: -200,
+    y: 140,
+  }
+
+  blocks.value[5] = {
+    id: 5,
+    parentId: 3,
+    type: 'ConditionActionHandler',
+    x: 0,
+    y: 140,
+  }
+}
 </script>
 
 <style module>

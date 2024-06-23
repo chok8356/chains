@@ -16,11 +16,7 @@
           :class="$style.blocks"
           ref="blocksEl">
           <div :class="$style.center"></div>
-          <ChainsLine
-            :key="line.id"
-            :line="line"
-            v-for="line in lines"
-            v-memo="[line.id, line.from.x, line.from.y, line.to.x, line.to.y]" />
+          <ChainsLines :lines="lines" />
 
           <ChainsSceneBlock
             :block="block"
@@ -37,13 +33,13 @@
 
 <script setup lang="ts">
 import ChainsGrid from '@/components/ChainsGrid.vue'
-import ChainsLine from '@/components/ChainsLine.vue'
+import ChainsLines from '@/components/ChainsLines.vue'
 import ChainsSceneBlock from '@/components/ChainsSceneBlock.vue'
-import { cloneDeep } from 'lodash-es'
+import { cloneDeep, throttle } from 'lodash-es'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { BLOCK_SIZE, SCENE_SCALE, ZOOM_INTENSITY } from './constants'
-import { type Block, type Blocks, type Line, type Lines, SceneEntityType } from './types'
+import { type Block, type Blocks, type Lines, SceneEntityType } from './types'
 
 const props = withDefaults(
   defineProps<{
@@ -86,9 +82,8 @@ const mouse = {
 }
 
 // events
-const mousedown = (e: MouseEvent) => {
+const mousedown = throttle((e: MouseEvent) => {
   const target = e.target as HTMLElement
-
   if (target === captureEl.value) {
     selected.value = {}
     dragging.value = true
@@ -106,9 +101,10 @@ const mousedown = (e: MouseEvent) => {
       }
     }
   }
-}
+}, 6)
 
-const mousemove = (e: MouseEvent) => {
+const mousemove = throttle((e: MouseEvent) => {
+  e.stopPropagation()
   if (dragging.value) {
     sceneOffset.value.x += e.clientX - mouse.x
     sceneOffset.value.y += e.clientY - mouse.y
@@ -119,32 +115,20 @@ const mousemove = (e: MouseEvent) => {
     const block = blocks.value[draggingBlockId.value]
     block.x = (e.clientX - mouse.x) / scale.value
     block.y = (e.clientY - mouse.y) / scale.value
-
-    // if (block.parentId !== null) {
-    //   const parentBlock = blocks.value[block.parentId]
-    //   lines.value[getLineId(block, parentBlock)] = getLine(block, parentBlock)
-    // }
-    //
-    // const childIds = blocksReverseDependencyTree.value[block.id]
-    // if (childIds.length) {
-    //   for (const childId of childIds) {
-    //     const childBlock = blocks.value[childId]
-    //     lines.value[getLineId(childBlock, block)] = getLine(childBlock, block)
-    //   }
-    // }
   }
-}
+}, 6)
 
-const mouseup = () => {
+const mouseup = throttle((e: MouseEvent) => {
+  e.stopPropagation()
   selected.value = {}
   if (draggingBlockId.value !== null) {
     selected.value[draggingBlockId.value] = true
   }
   dragging.value = false
   draggingBlockId.value = null
-}
+}, 6)
 
-const wheel = (e: WheelEvent) => {
+const wheel = throttle((e: WheelEvent) => {
   e.preventDefault()
   e.stopPropagation()
   if (!canvasEl.value) return
@@ -160,93 +144,35 @@ const wheel = (e: WheelEvent) => {
   scale.value = newScale
   sceneOffset.value.x = mouseX - offsetX * newScale
   sceneOffset.value.y = mouseY - offsetY * newScale
-}
+}, 6)
 
-const getLineId = (block: Block, parentBlock: Block) => {
-  return `${parentBlock.id}_${block.id}`
-}
-
-const getLine = (block: Block, parentBlock: Block): Line => {
-  return {
-    from: { x: parentBlock.x + BLOCK_SIZE.width / 2, y: parentBlock.y + BLOCK_SIZE.height },
-    id: getLineId(block, parentBlock),
-    to: { x: block.x + BLOCK_SIZE.width / 2, y: block.y },
-  }
-}
-
-const getLines = () => {
-  const result: Lines = {}
+const updateLines = () => {
   for (const id in blocks.value) {
     const block = blocks.value[id]
     if (block.parentId !== null) {
       const parentBlock = blocks.value[block.parentId]
       if (parentBlock) {
-        result[getLineId(block, parentBlock)] = getLine(block, parentBlock)
+        lines.value[`${parentBlock.id}_${block.id}`] = {
+          from: { x: parentBlock.x + BLOCK_SIZE.width / 2, y: parentBlock.y + BLOCK_SIZE.height },
+          to: { x: block.x + BLOCK_SIZE.width / 2, y: block.y },
+        }
       }
     }
   }
-  return result
 }
 
-// const blocksReverseDependencyTree = ref<Record<number, number[]>>({})
-
-// const getBlocksReverseDependencyTree = (blocks: Blocks) => {
-//   const result: Record<number, number[]> = {}
-//
-//   for (const blockId in blocks) {
-//     if (blockId in blocks) {
-//       result[Number(blockId)] = []
-//     }
-//   }
-//
-//   for (const blockId in blocks) {
-//     if (blockId in blocks) {
-//       const block = blocks[blockId]
-//       if (block.parentId !== null) {
-//         if (!result[block.parentId]) {
-//           result[block.parentId] = []
-//         }
-//         result[block.parentId].push(block.id)
-//       }
-//     }
-//   }
-//
-//   return result
-// }
-
-// resize canvas
-const canvasSize = ref<{ height: number; width: number }>({
-  height: 0,
-  width: 0,
-})
-
-const canvasRafId = ref<null | number>(null)
-
-const resizeObserver = new ResizeObserver(() => {
-  if (canvasRafId.value) {
-    cancelAnimationFrame(canvasRafId.value)
-  }
-  canvasRafId.value = requestAnimationFrame(() => {
-    if (rootEl.value && canvasEl.value) {
-      const { height, width } = rootEl.value.getBoundingClientRect()
-      canvasSize.value.width = width
-      canvasSize.value.height = height
-      canvasEl.value.style.width = `${canvasSize.value.width}px`
-      canvasEl.value.style.height = `${canvasSize.value.height}px`
-    }
-  })
-})
+const rafId = ref<null | number>(null)
 
 // update scene position
-const sceneRafId = ref<null | number>(null)
+// const sceneRafId = ref<null | number>(null)
 
 watch(
   () => sceneOffset.value,
   () => {
-    if (sceneRafId.value) {
-      cancelAnimationFrame(sceneRafId.value)
+    if (rafId.value) {
+      cancelAnimationFrame(rafId.value)
     }
-    sceneRafId.value = requestAnimationFrame(() => {
+    rafId.value = requestAnimationFrame(() => {
       if (blocksEl.value) {
         blocksEl.value.style.transform = `translate3d(${sceneOffset.value.x}px, ${sceneOffset.value.y}px, 0) scale(${scale.value})`
       }
@@ -256,16 +182,16 @@ watch(
 )
 
 // update blocks connections
-const blocksRafId = ref<null | number>(null)
+// const blocksRafId = ref<null | number>(null)
 
 watch(
   () => blocks.value,
   () => {
-    if (blocksRafId.value) {
-      cancelAnimationFrame(blocksRafId.value)
+    if (rafId.value) {
+      cancelAnimationFrame(rafId.value)
     }
-    blocksRafId.value = requestAnimationFrame(() => {
-      lines.value = getLines()
+    rafId.value = requestAnimationFrame(() => {
+      updateLines()
     })
   },
   { deep: true, immediate: true },
@@ -274,11 +200,7 @@ watch(
 onMounted(async () => {
   await nextTick()
   blocks.value = cloneDeep(props.value)
-  // blocksReverseDependencyTree.value = getBlocksReverseDependencyTree(blocks.value)
-  lines.value = getLines()
-  if (rootEl.value) {
-    resizeObserver.observe(rootEl.value)
-  }
+  updateLines()
   if (canvasEl.value) {
     sceneOffset.value.x = canvasEl.value.clientWidth / 2
     sceneOffset.value.y = canvasEl.value.clientHeight / 2
@@ -348,6 +270,7 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   height: 12px;
   left: 50%;
+  pointer-events: none;
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);

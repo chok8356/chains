@@ -32,7 +32,6 @@
 import { colord } from 'colord'
 import { computed, ref, watch } from 'vue'
 
-import { BLOCK_SIZE } from './constants'
 import { type Block, SceneEntityType } from './types'
 import { getBlockSettings } from './utils'
 
@@ -64,8 +63,6 @@ const style = computed(() => {
   return {
     borderColor: props.selected ? settings.color : 'transparent',
     boxShadow: props.dragging ? `0px 21px 28px ${shadowColor}` : '',
-    height: `${BLOCK_SIZE.height}px`,
-    width: `${BLOCK_SIZE.width}px`,
   }
 })
 
