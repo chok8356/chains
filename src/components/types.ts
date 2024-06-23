@@ -17,30 +17,26 @@ export type BlockType =
   | 'WaitActionHandler'
 
 export interface Block {
-  coords: {
-    x: number
-    y: number
-  }
   id: number
   parentId: Block['id'] | null
   type: BlockType
-}
-
-export type Blocks = Record<Block['id'], Block>
-
-export interface ICoords {
   x: number
   y: number
 }
 
+export type Blocks = Record<Block['id'], Block>
+
 export interface Scene {
-  center: ICoords
   scale: number
+  x: number
+  y: number
 }
 
 export interface Line {
-  end: ICoords
-  start: ICoords
+  x1: number
+  x2: number
+  y1: number
+  y2: number
 }
 
 export type Lines = Record<string, Line>

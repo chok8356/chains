@@ -1,6 +1,10 @@
 <template>
   <div :class="$style.root">
-    <ChainsScene v-model:blocks="blocks" />
+    <div :class="$style.sidebar">Sidebar</div>
+    <div :class="$style.header">Header</div>
+    <div :class="$style.scene">
+      <ChainsScene v-model:blocks="blocks" />
+    </div>
   </div>
 </template>
 
@@ -22,64 +26,52 @@ onMounted(() => {
       row++
     }
     blocks.value[i] = {
-      coords: {
-        x: (i % perRow) * 180,
-        y: row * 110,
-      },
       id: i,
       parentId: null,
       type: 'EmailActionHandler',
+      x: (i % perRow) * 180,
+      y: row * 110,
     }
   }
 
   blocks.value[1] = {
-    coords: {
-      x: 0,
-      y: -300,
-    },
     id: 1,
     parentId: null,
     type: 'EmailActionHandler',
+    x: 0,
+    y: -300,
   }
 
   blocks.value[2] = {
-    coords: {
-      x: 0,
-      y: 0,
-    },
     id: 2,
     parentId: 1,
     type: 'SMSActionHandler',
+    x: 0,
+    y: 0,
   }
 
   blocks.value[3] = {
-    coords: {
-      x: -200,
-      y: 0,
-    },
     id: 3,
     parentId: 1,
     type: 'PushActionHandler',
+    x: -200,
+    y: 0,
   }
 
   blocks.value[4] = {
-    coords: {
-      x: -300,
-      y: 300,
-    },
     id: 4,
     parentId: 3,
     type: 'ConditionActionHandler',
+    x: -300,
+    y: 300,
   }
 
   blocks.value[5] = {
-    coords: {
-      x: 0,
-      y: 300,
-    },
     id: 5,
     parentId: 3,
     type: 'ConditionActionHandler',
+    x: 0,
+    y: 300,
   }
 })
 </script>
@@ -87,12 +79,42 @@ onMounted(() => {
 <style module>
 .root {
   background-color: var(--color-warm-grey-50);
-  display: flex;
-  height: 100vh;
-  max-height: 100vh;
-  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  grid-template-rows: 40px 1fr;
+  height: 100%;
   outline: none;
   position: relative;
   user-select: none;
+  width: 100%;
+}
+
+.sidebar {
+  background-color: var(--color-white);
+  border-right: 1px solid var(--color-grey-200);
+  grid-column: 1 / 1;
+  grid-row: 1 / 3;
+  height: 100%;
+  padding: 16px;
+  width: 100%;
+}
+
+.header {
+  align-items: center;
+  background-color: var(--color-white);
+  display: flex;
+  grid-column: 2 / 2;
+  grid-row: 1 / 1;
+  height: 40px;
+  padding: 0 16px;
+  width: 100%;
+}
+
+.scene {
+  box-shadow: inset 0 0 24px -12px rgb(0 0 0 / 20%);
+  grid-column: 2 / 2;
+  grid-row: 2 / 2;
+  height: 100%;
+  width: 100%;
 }
 </style>

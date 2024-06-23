@@ -60,3 +60,8 @@ body {
   --color-yellow-400: #fb9600;
   --color-yellow-500: #fb7800;
 }
+
+#app {
+  height: 100vh;
+  width: 100vw;
+}

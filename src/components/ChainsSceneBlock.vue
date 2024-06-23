@@ -20,11 +20,7 @@
     </div>
     <div :class="$style.content">
       <slot>
-        <pre>
-            <code>
-              {{ block.coords }}
-            </code>
-        </pre>
+        <code> {{ block.x }} {{ block.y }} </code>
       </slot>
     </div>
   </div>
@@ -62,7 +58,7 @@ const rootEl = ref<HTMLDivElement | null>(null)
 const settings = getBlockSettings(props.block)
 
 const style = computed(() => {
-  const { x, y } = props.block.coords
+  const { x, y } = props.block
   const shadowColor = colord(settings.color).alpha(0.2).toRgbString()
   return {
     borderColor: props.selected ? settings.color : 'transparent',
@@ -83,8 +79,7 @@ defineExpose({
   border-radius: 12px;
   box-shadow: 0 4px 8px transparent;
   cursor: grab;
-  height: auto;
-  min-height: 98px;
+  height: 98px;
   overflow: hidden;
   padding: 4px;
   position: absolute;

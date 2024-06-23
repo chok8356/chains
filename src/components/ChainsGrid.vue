@@ -68,13 +68,10 @@ const gridStrokeWidth = computed(() => {
 <style module>
 .root {
   fill: none;
-  height: calc(100% + 2px);
-  left: -1px;
+  height: 100%;
   pointer-events: none;
-  position: absolute;
   stroke: var(--color-grey-400);
   stroke-opacity: 1;
-  top: -1px;
-  width: calc(100% + 2px);
+  width: 100%;
 }
 </style>
