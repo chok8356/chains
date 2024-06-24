@@ -17,7 +17,7 @@ import { onMounted, ref } from 'vue'
 const blocks = ref<Blocks>({})
 
 onMounted(() => {
-  fillScene(1000, 25)
+  fillScene(100, 25)
   // fillSceneCustom()
 })
 
@@ -33,6 +33,7 @@ const fillScene = (count = 0, perRow = 25) => {
     blocks.value[i] = {
       id: i,
       parentId: row * perRow,
+      // parentId: 0,
       type: 'EmailActionHandler',
       x: columnIndex * 200,
       y: isFirstInRow ? row * 400 : row * 400 + 200,

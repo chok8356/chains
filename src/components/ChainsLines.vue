@@ -48,7 +48,7 @@ const getPath = (line: Line) => {
   top: 0;
   transform-origin: top left;
   width: auto;
-  will-change: transform;
+  will-change: contents;
   z-index: 0;
 }
 </style>

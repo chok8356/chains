@@ -7,7 +7,7 @@
       ref="canvasEl">
       <div
         :class="$style.renderer"
-        ref="captureEl">
+        ref="rendererEl">
         <ChainsGrid
           :class="$style.grid"
           :scale="scale" />
@@ -56,7 +56,7 @@ defineEmits<{
 
 const rootEl = ref<HTMLDivElement | null>(null)
 const canvasEl = ref<HTMLDivElement | null>(null)
-const captureEl = ref<HTMLDivElement | null>(null)
+const rendererEl = ref<HTMLDivElement | null>(null)
 const blocksEl = ref<HTMLDivElement | null>(null)
 
 const rafId = ref<null | number>(null)
@@ -91,14 +91,15 @@ const mouse = ref({
 // events
 const mousedown = throttle((e: MouseEvent) => {
   e.preventDefault()
-  e.stopPropagation()
   const target = e.target as HTMLElement
-  if (target === captureEl.value) {
+  if (target === rendererEl.value) {
     selected.value = {}
     dragging.value = true
     mouse.value.x = e.clientX
     mouse.value.y = e.clientY
-  } else {
+  }
+  if (blocksEl.value?.contains(target)) {
+    e.stopPropagation()
     const closestEl = target.closest('[data-type]') as HTMLElement | null
     if (closestEl) {
       const id = Number(closestEl.id)
@@ -256,22 +257,22 @@ onMounted(async () => {
     sceneOffset.value.x = canvasEl.value.clientWidth / 2
     sceneOffset.value.y = canvasEl.value.clientHeight / 2
   }
-  if (captureEl.value) {
-    captureEl.value.addEventListener('mousedown', mousedown, true)
-    captureEl.value.addEventListener('wheel', wheel, true)
-    document.documentElement.addEventListener('mousemove', mousemove, true)
-    document.documentElement.addEventListener('mouseup', mouseup, true)
+  if (canvasEl.value) {
+    canvasEl.value.addEventListener('mousedown', mousedown)
+    canvasEl.value.addEventListener('wheel', wheel, true)
   }
+  document.documentElement.addEventListener('mousemove', mousemove, true)
+  document.documentElement.addEventListener('mouseup', mouseup, true)
   animateScene()
 })
 
 onBeforeUnmount(() => {
-  if (captureEl.value) {
-    captureEl.value.removeEventListener('mousedown', mousedown)
-    captureEl.value.removeEventListener('wheel', wheel)
-    document.documentElement.removeEventListener('mousemove', mousemove)
-    document.documentElement.removeEventListener('mouseup', mouseup)
+  if (canvasEl.value) {
+    canvasEl.value.removeEventListener('mousedown', mousedown)
+    canvasEl.value.removeEventListener('wheel', wheel)
   }
+  document.documentElement.removeEventListener('mousemove', mousemove)
+  document.documentElement.removeEventListener('mouseup', mouseup)
 })
 </script>
 
