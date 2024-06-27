@@ -17,8 +17,8 @@ import { onMounted, ref } from 'vue'
 const blocks = ref<Blocks>({})
 
 onMounted(() => {
-  fillScene(100, 25)
-  // fillSceneCustom()
+  // fillScene(100, 25)
+  fillSceneCustom()
 })
 
 const fillScene = (count = 0, perRow = 25) => {
@@ -80,6 +80,14 @@ const fillSceneCustom = () => {
     type: 'ConditionActionHandler',
     x: 0,
     y: 140,
+  }
+
+  blocks.value[6] = {
+    id: 6,
+    parentId: null,
+    type: 'ConditionActionHandler',
+    x: 0,
+    y: 340,
   }
 }
 </script>

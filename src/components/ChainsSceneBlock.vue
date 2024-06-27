@@ -7,9 +7,13 @@
         [$style.selected]: selected,
       },
     ]"
-    :data-type="SceneEntityType.Block"
+    :data-block-type="SceneBlockType.Block"
     :id="String(block.id)"
     ref="blockEl">
+    <div
+      :class="[$style.connectionPoint, $style.connectionPointInput]"
+      :data-event-type="SceneEventType.Input"
+      :style="{ borderColor: settings.color }"></div>
     <div
       :class="$style.header"
       :style="{ backgroundColor: settings.color }">
@@ -24,6 +28,10 @@
         <code> {{ block.x }} {{ block.y }} </code>
       </slot>
     </div>
+    <div
+      :class="[$style.connectionPoint, $style.connectionPointOutput]"
+      :data-event-type="SceneEventType.Output"
+      :style="{ borderColor: settings.color }"></div>
   </div>
 </template>
 
@@ -31,7 +39,7 @@
 import { colord } from 'colord'
 import { onMounted, ref, watch } from 'vue'
 
-import { type Block, SceneEntityType } from './types'
+import { type Block, SceneBlockType, SceneEventType } from './types'
 import { getBlockSettings } from './utils'
 
 const props = withDefaults(
@@ -88,7 +96,6 @@ onMounted(animate)
   box-shadow: 0 4px 8px transparent;
   cursor: grab;
   height: 98px;
-  overflow: hidden;
   padding: 4px;
   position: absolute;
   transform: translateZ(0);
@@ -157,5 +164,35 @@ onMounted(animate)
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
+}
+
+.connectionPoint {
+  background-color: var(--color-white);
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  height: 8px;
+  left: 50%;
+  position: absolute;
+  width: 8px;
+  z-index: 4;
+}
+
+.connectionPointInput {
+  top: -2px;
+  transform: translate(-50%, -50%);
+
+  &:hover {
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+}
+
+.connectionPointOutput {
+  bottom: -2px;
+  transform: translate(-50%, 50%);
+
+  &:hover {
+    transform: translate(-50%, 50%) scale(1.5);
+  }
 }
 </style>

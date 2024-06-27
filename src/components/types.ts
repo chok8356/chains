@@ -26,8 +26,13 @@ export interface Block {
 
 export type Blocks = Record<Block['id'], Block>
 
-export const enum SceneEntityType {
+export const enum SceneBlockType {
   Block,
+}
+
+export const enum SceneEventType {
+  Input,
+  Output,
 }
 
 export interface Line {

@@ -39,7 +39,7 @@ import { throttle } from 'lodash-es'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { BLOCK_SIZE, SCENE_SCALE, THROTTLE, ZOOM_INTENSITY } from './constants'
-import { type Block, type Blocks, type Lines, SceneEntityType } from './types'
+import { type Block, type Blocks, type Lines, SceneBlockType, SceneEventType } from './types'
 
 const props = withDefaults(
   defineProps<{
@@ -65,6 +65,8 @@ const blocks = ref<Blocks>({})
 
 const lines = ref<Lines>({})
 
+const draggingLineId = ref<Block['id'] | null>(null)
+
 const sceneOffset = ref({
   x: 0,
   y: 0,
@@ -87,6 +89,10 @@ const mouse = ref({
   x: 0,
   y: 0,
 })
+const mouseMove = ref({
+  x: 0,
+  y: 0,
+})
 
 // events
 const mousedown = throttle((e: MouseEvent) => {
@@ -100,14 +106,22 @@ const mousedown = throttle((e: MouseEvent) => {
   }
   if (blocksEl.value?.contains(target)) {
     e.stopPropagation()
-    const closestEl = target.closest('[data-type]') as HTMLElement | null
-    if (closestEl) {
-      const id = Number(closestEl.id)
-      const type = Number(closestEl.dataset.type)
-      if (type === SceneEntityType.Block) {
+    const closestBlockEl = target.closest('[data-block-type]') as HTMLElement | null
+    if (closestBlockEl) {
+      const id = Number(closestBlockEl.id)
+      const type = Number(closestBlockEl.dataset.blockType)
+      if (type === SceneBlockType.Block) {
         draggingBlockId.value = id
         mouse.value.x = e.clientX - blocks.value[id].x * scale.value
         mouse.value.y = e.clientY - blocks.value[id].y * scale.value
+        const closestEventEl = target.closest('[data-event-type]') as HTMLElement | null
+        if (closestEventEl) {
+          const eventType = Number(closestEventEl.dataset.eventType)
+          if (eventType === SceneEventType.Output) {
+            draggingBlockId.value = null
+            draggingLineId.value = id
+          }
+        }
       }
     }
   }
@@ -125,10 +139,16 @@ const mousemove = throttle((e: MouseEvent) => {
   if (draggingBlockId.value !== null) {
     blocks.value[draggingBlockId.value].x = (e.clientX - mouse.value.x) / scale.value
     blocks.value[draggingBlockId.value].y = (e.clientY - mouse.value.y) / scale.value
-
     const block = blocks.value[draggingBlockId.value]
     if (rafId.value) cancelAnimationFrame(rafId.value)
     rafId.value = requestAnimationFrame(() => animateLines(block))
+  }
+  if (draggingLineId.value !== null) {
+    mouseMove.value.x = (e.clientX - mouse.value.x) / scale.value
+    mouseMove.value.y = (e.clientY - mouse.value.y) / scale.value
+    const block = blocks.value[draggingLineId.value]
+    if (rafId.value) cancelAnimationFrame(rafId.value)
+    rafId.value = requestAnimationFrame(() => animateDraggingLine(block))
   }
 }, THROTTLE)
 
@@ -139,8 +159,37 @@ const mouseup = throttle((e: MouseEvent) => {
   if (draggingBlockId.value !== null) {
     selected.value[draggingBlockId.value] = true
   }
+  if (draggingLineId.value !== null) {
+    const target = e.target as HTMLElement
+    if (blocksEl.value?.contains(target)) {
+      const closestBlockEl = target.closest('[data-block-type]') as HTMLElement | null
+      if (closestBlockEl) {
+        const id = Number(closestBlockEl.id)
+        const type = Number(closestBlockEl.dataset.blockType)
+        if (type === SceneBlockType.Block) {
+          const closestEventEl = target.closest('[data-event-type]') as HTMLElement | null
+          if (closestEventEl) {
+            const eventType = Number(closestEventEl.dataset.eventType)
+            if (eventType === SceneEventType.Input) {
+              const block = blocks.value[draggingLineId.value]
+              blocks.value[id].parentId = block.id
+              delete lines.value[getLineId(block, undefined)]
+              lines.value[getLineId(blocks.value[id], block)] = {
+                x1: block.x + BLOCK_SIZE.width / 2,
+                x2: mouseMove.value.x + BLOCK_SIZE.width / 2,
+                y1: block.y + BLOCK_SIZE.height,
+                y2: mouseMove.value.y + BLOCK_SIZE.height,
+              }
+              draggingLineId.value = null
+            }
+          }
+        }
+      }
+    }
+  }
   dragging.value = false
   draggingBlockId.value = null
+  draggingLineId.value = null
 }, THROTTLE)
 
 const wheel = throttle((e: WheelEvent) => {
@@ -161,8 +210,8 @@ const wheel = throttle((e: WheelEvent) => {
   sceneOffset.value.y = mouseY - offsetY * newScale
 }, THROTTLE)
 
-const getLineId = (block: Block, parentBlock: Block) => {
-  return `${parentBlock.id}_${block.id}`
+const getLineId = (block?: Block, parentBlock?: Block) => {
+  return `${parentBlock?.id}_${block?.id}`
 }
 
 const getLine = (block: Block, parentBlock: Block) => {
@@ -219,7 +268,6 @@ const animateLines = (block: Block) => {
       blocks.value[block.parentId],
     )
   }
-
   const childIds = blocksReverseDependencyTree.value[block.id]
   if (childIds.length) {
     for (const childId of childIds) {
@@ -227,6 +275,16 @@ const animateLines = (block: Block) => {
         lines.value[getLineId(blocks.value[childId], block)] = getLine(blocks.value[childId], block)
       }
     }
+  }
+}
+
+// update dragging line
+const animateDraggingLine = (block: Block) => {
+  lines.value[getLineId(block, undefined)] = {
+    x1: block.x + BLOCK_SIZE.width / 2,
+    x2: mouseMove.value.x + BLOCK_SIZE.width / 2,
+    y1: block.y + BLOCK_SIZE.height,
+    y2: mouseMove.value.y + BLOCK_SIZE.height,
   }
 }
 
