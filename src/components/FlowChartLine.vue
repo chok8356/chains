@@ -20,8 +20,8 @@ const props = defineProps<{
 
 const d = computed(() => {
   const { end, start } = props.line
-  const dist =
-    Math.sqrt((end.x - start.x) * (end.x - start.x) + (end.y - start.y) * (end.y - start.y)) * 0.25
+  const dist
+    = Math.sqrt((end.x - start.x) * (end.x - start.x) + (end.y - start.y) * (end.y - start.y)) * 0.25
   return `M ${start.x}, ${start.y} C ${start.x}, ${start.y + dist}, ${end.x}, ${end.y - dist}, ${end.x}, ${end.y}`
 })
 </script>

@@ -12,7 +12,7 @@
     }">
     <div
       :class="[$style.connectionPoint, $style.connectionPointInput]"
-      @mouseup.passive.capture="input"></div>
+      @mouseup.passive.capture="input" />
     <div :class="$style.header">
       <span :class="$style.text"> id: {{ node.id }} </span>
     </div>
@@ -20,19 +20,19 @@
       <slot>
         <code>
           x: {{ node.x }}
-          <br />
+          <br>
           y: {{ node.y }}
         </code>
       </slot>
     </div>
     <div
       :class="[$style.connectionPoint, $style.connectionPointOutput]"
-      @mousedown.passive.stop.capture="output"></div>
+      @mousedown.passive.stop.capture="output" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { type Node } from './types'
+import type { Node } from './types'
 
 const props = defineProps<{
   dragging: boolean
@@ -45,11 +45,11 @@ const emit = defineEmits<{
   (e: 'output'): void
 }>()
 
-const input = () => {
+function input() {
   emit('input')
 }
 
-const output = () => {
+function output() {
   emit('output')
 }
 </script>

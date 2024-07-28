@@ -11,14 +11,14 @@
       <circle
         :cx="dotSize"
         :cy="dotSize"
-        :r="dotSize / 2"></circle>
+        :r="dotSize / 2" />
     </pattern>
     <rect
       fill="url(#dots-pattern)"
       height="100%"
       width="100%"
       x="0"
-      y="0"></rect>
+      y="0" />
   </svg>
 </template>
 

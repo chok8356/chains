@@ -3,10 +3,10 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { Blocks } from '@/components/types'
 
 import FlowChart from '@/components/FlowChart.vue'
-import { ref } from 'vue'
 
 const blocks = ref<Blocks>({
   1: {

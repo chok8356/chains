@@ -11,7 +11,7 @@
         :style="{
           transform: `translate3d(${scene.center.x}px, ${scene.center.y}px, 0) scale(${scene.scale})`,
         }">
-        <div :class="$style.center"></div>
+        <div :class="$style.center" />
         <FlowChartLine
           :key="lineId"
           :line="line"
@@ -46,12 +46,13 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import type { Blocks, Line, Node } from '@/components/types'
+
 import { BLOCK_SIZE, SCENE_SCALE, ZOOM_INTENSITY } from '@/components/constants'
 import FlowChartGrid from '@/components/FlowChartGrid.vue'
 import FlowChartLine from '@/components/FlowChartLine.vue'
 import FlowChartNode from '@/components/FlowChartNode.vue'
-import { type Blocks, type Line, type Node } from '@/components/types'
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
 const props = defineProps<{
   value?: Blocks
@@ -69,6 +70,24 @@ const dragging = ref(false)
 const draggingNodeId = ref<Node['id']>()
 const selectedNodeId = ref<Node['id']>()
 
+// Scene
+const scene = reactive({
+  center: {
+    x: 0,
+    y: 0,
+  },
+  position: {
+    left: 0,
+    top: 0,
+  },
+  scale: 1,
+})
+
+const mouse = reactive({
+  current: { x: 0, y: 0 },
+  start: { x: 0, y: 0 },
+})
+
 // Graph
 const nodes = ref<Record<Node['id'], Node>>({})
 
@@ -78,7 +97,7 @@ const draggingLine = ref<Line>()
 
 const createLineId = (startId: Node['id'], endId: Node['id']) => `${startId}:${endId}`
 
-const createLine = (startId: Node['id'], endId: Node['id']): Line => {
+function createLine(startId: Node['id'], endId: Node['id']): Line {
   const start = nodes.value[startId]!
   const end = nodes.value[endId]!
 
@@ -96,8 +115,9 @@ const createLine = (startId: Node['id'], endId: Node['id']): Line => {
   }
 }
 
-const addNode = (id: Node['id'], x: number, y: number, inputId?: Node['id']): void => {
-  if (nodes.value[id]) throw new Error(`Node with id ${id} already exists`)
+function addNode(id: Node['id'], x: number, y: number, inputId?: Node['id']): void {
+  if (nodes.value[id])
+    throw new Error(`Node with id ${id} already exists`)
 
   nodes.value[id] = {
     id,
@@ -117,10 +137,11 @@ const addNode = (id: Node['id'], x: number, y: number, inputId?: Node['id']): vo
   }
 }
 
-const moveNode = (id: Node['id'], deltaX: number, deltaY: number): void => {
+function moveNode(id: Node['id'], deltaX: number, deltaY: number): void {
   const node = nodes.value[id]
 
-  if (!node) throw new Error(`Node with id ${id} does not exist`)
+  if (!node)
+    throw new Error(`Node with id ${id} does not exist`)
 
   node.x += deltaX
   node.y += deltaY
@@ -144,10 +165,11 @@ const moveNode = (id: Node['id'], deltaX: number, deltaY: number): void => {
   }
 }
 
-const changeParentNode = (nodeId: Node['id'], newParentId?: Node['id']): void => {
+function changeParentNode(nodeId: Node['id'], newParentId?: Node['id']): void {
   const node = nodes.value[nodeId]
 
-  if (!node) throw new Error(`Node with id ${nodeId} does not exist`)
+  if (!node)
+    throw new Error(`Node with id ${nodeId} does not exist`)
 
   if (node.inputId) {
     const oldParent = nodes.value[node.inputId]
@@ -170,14 +192,15 @@ const changeParentNode = (nodeId: Node['id'], newParentId?: Node['id']): void =>
   }
 }
 
-// Check for the presence of a cycle (Depth-First Search)
-const hasCycle = (nodeId: Node['id'], newParentId?: Node['id']): boolean => {
+// Depth-First Search
+function checkNodeHasCycle(nodeId: Node['id'], newParentId?: Node['id']): boolean {
   const visited = new Set<Node['id']>()
   const stack = [nodeId]
 
   while (stack.length > 0) {
     const currentId = stack.pop()!
-    if (currentId === newParentId) return true
+    if (currentId === newParentId)
+      return true
     if (!visited.has(currentId)) {
       visited.add(currentId)
       const node = nodes.value[currentId]
@@ -192,27 +215,10 @@ const hasCycle = (nodeId: Node['id'], newParentId?: Node['id']): boolean => {
   return false
 }
 
-// Scene
-const scene = reactive({
-  center: {
-    x: 0,
-    y: 0,
-  },
-  position: {
-    left: 0,
-    top: 0,
-  },
-  scale: 1,
-})
-
-const mouse = reactive({
-  current: { x: 0, y: 0 },
-  start: { x: 0, y: 0 },
-})
-
 // Events
-const wheel = (e: WheelEvent) => {
-  if (rafId.value) cancelAnimationFrame(rafId.value)
+function wheel(e: WheelEvent) {
+  if (rafId.value)
+    cancelAnimationFrame(rafId.value)
 
   rafId.value = requestAnimationFrame(() => {
     const oldScale = scene.scale
@@ -237,7 +243,7 @@ const wheel = (e: WheelEvent) => {
   })
 }
 
-const mousedown = (e: MouseEvent) => {
+function mousedown(e: MouseEvent) {
   dragging.value = true
 
   selectedNodeId.value = undefined
@@ -246,7 +252,7 @@ const mousedown = (e: MouseEvent) => {
   mouse.start.y = e.clientY
 }
 
-const mouseup = (e: MouseEvent) => {
+function mouseup(e: MouseEvent) {
   e.stopPropagation()
 
   if (draggingNodeId.value !== undefined) {
@@ -258,14 +264,15 @@ const mouseup = (e: MouseEvent) => {
   draggingLine.value = undefined
 }
 
-const mousemove = (e: MouseEvent) => {
+function mousemove(e: MouseEvent) {
   e.preventDefault()
   e.stopPropagation()
 
   mouse.current.x = e.clientX
   mouse.current.y = e.clientY
 
-  if (rafId.value) cancelAnimationFrame(rafId.value)
+  if (rafId.value)
+    cancelAnimationFrame(rafId.value)
 
   rafId.value = requestAnimationFrame(() => {
     const deltaX = mouse.current.x - mouse.start.x
@@ -291,11 +298,11 @@ const mousemove = (e: MouseEvent) => {
 }
 
 // Events Node
-const mousedownNode = (nodeId: Node['id']) => {
+function mousedownNode(nodeId: Node['id']) {
   draggingNodeId.value = nodeId
 }
 
-const outputNode = (nodeId: Node['id']) => {
+function outputNode(nodeId: Node['id']) {
   const node = nodes.value[nodeId]
 
   const x = node.x + BLOCK_SIZE.width / 2
@@ -314,13 +321,14 @@ const outputNode = (nodeId: Node['id']) => {
   }
 }
 
-const inputNode = (nodeId: Node['id']) => {
+function inputNode(nodeId: Node['id']) {
   if (draggingLine.value !== undefined) {
     const { id: newParentId } = draggingLine.value.start
     if (newParentId !== nodeId) {
-      if (hasCycle(nodeId, draggingLine.value.start.id)) {
+      if (checkNodeHasCycle(nodeId, draggingLine.value.start.id)) {
         throw new Error(`Cyclic dependency was found: ${nodeId} and ${newParentId}`)
-      } else {
+      }
+      else {
         changeParentNode(nodeId, newParentId)
       }
     }
@@ -336,11 +344,11 @@ onMounted(() => {
   }
 
   if (rootEl.value) {
-    const { left, top } = rootEl.value.getBoundingClientRect()
+    const { height, left, top, width } = rootEl.value.getBoundingClientRect()
     scene.position.left = left
     scene.position.top = top
-    scene.center.x = rootEl.value.clientWidth / 2
-    scene.center.y = rootEl.value.clientHeight / 2
+    scene.center.x = width / 2
+    scene.center.y = height / 2
   }
 
   document.documentElement.addEventListener('mousemove', mousemove, true)

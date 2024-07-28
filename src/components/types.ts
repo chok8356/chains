@@ -7,8 +7,16 @@ export interface Node {
 }
 
 export interface Line {
-  end: { id?: number; x: number; y: number }
-  start: { id?: number; x: number; y: number }
+  end: {
+    id?: number
+    x: number
+    y: number
+  }
+  start: {
+    id?: number
+    x: number
+    y: number
+  }
 }
 
 export interface Block {
