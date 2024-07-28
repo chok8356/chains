@@ -1,17 +1,11 @@
 <template>
-  <svg
-    :class="$style.root"
-    height="100%"
-    width="100%">
-    <g>
-      <path :d="d" />
-    </g>
+  <svg :class="$style.root">
+    <path :d="d" />
   </svg>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-
 import type { Line } from './types'
 
 const props = defineProps<{
@@ -40,7 +34,6 @@ const d = computed(() => {
   top: 0;
   transform-origin: top left;
   width: auto;
-  will-change: contents;
   z-index: 0;
 }
 </style>

@@ -2,16 +2,17 @@
   <div
     :class="$style.root"
     @mousedown.passive.stop="mousedown"
-    @wheel.passive.stop.capture="wheel"
+    @wheel.passive.capture.stop="wheel"
     ref="rootEl">
-    <div :class="$style.renderer">
-      <FlowChartGrid :scene="scene" />
-      <div
-        :class="$style.blocks"
-        :style="{
-          transform: `translate3d(${scene.center.x}px, ${scene.center.y}px, 0) scale(${scene.scale})`,
-        }">
-        <div :class="$style.center" />
+    <FlowChartGrid :scene="scene" />
+    <div
+      :class="$style.scene"
+      :style="{
+        transform: `translate3d(${scene.center.x}px, ${scene.center.y}px, 0) scale(${scene.scale})`,
+      }">
+      <div :class="$style.center" />
+
+      <div :class="$style.lines">
         <FlowChartLine
           :key="lineId"
           :line="line"
@@ -24,23 +25,24 @@
             line.end.y,
             line.end.id,
           ]" />
-
-        <FlowChartLine
-          :key="`${draggingLine.start.id}:${draggingLine.end.id}`"
-          :line="draggingLine"
-          v-if="draggingLine" />
-
-        <FlowChartNode
-          :dragging="node.id === draggingNodeId"
-          :key="node.id"
-          :node="node"
-          :selected="node.id === selectedNodeId"
-          @input="inputNode(node.id)"
-          @mousedown.passive.stop="mousedownNode(node.id)"
-          @output="outputNode(node.id)"
-          v-for="node in nodes"
-          v-memo="[node.x, node.y, node.id === draggingNodeId, node.id === selectedNodeId]" />
       </div>
+
+      <FlowChartLine
+        :key="`${draggingLine.start.id}:${draggingLine.end.id}`"
+        :line="draggingLine"
+        v-if="draggingLine" />
+
+      <FlowChartNode
+        :dragging="node.id === draggingNodeId"
+        :key="node.id"
+        :node="node"
+        :selected="node.id === selectedNodeId"
+        @input="inputNode(node.id)"
+        @mousedown="mousedownNode(node.id)"
+        @mouseup="mouseupNode()"
+        @output="outputNode(node.id)"
+        v-for="node in nodes"
+        v-memo="[node.x, node.y, node.id === draggingNodeId, node.id === selectedNodeId]" />
     </div>
   </div>
 </template>
@@ -64,9 +66,12 @@ defineEmits<{
 
 const rootEl = ref<HTMLDivElement>()
 
-const rafId = ref<number>()
+let animationFrameId: null | number = null
 
 const dragging = ref(false)
+
+const draggingLine = ref<Line>()
+
 const draggingNodeId = ref<Node['id']>()
 const selectedNodeId = ref<Node['id']>()
 
@@ -83,17 +88,15 @@ const scene = reactive({
   scale: 1,
 })
 
-const mouse = reactive({
+const mouse = {
   current: { x: 0, y: 0 },
   start: { x: 0, y: 0 },
-})
+}
 
 // Graph
 const nodes = ref<Record<Node['id'], Node>>({})
 
 const lines = ref<Record<string, Line>>({})
-
-const draggingLine = ref<Line>()
 
 const createLineId = (startId: Node['id'], endId: Node['id']) => `${startId}:${endId}`
 
@@ -192,7 +195,7 @@ function changeParentNode(nodeId: Node['id'], newParentId?: Node['id']): void {
   }
 }
 
-// Depth-First Search
+// Graph Depth-First Search
 function checkNodeHasCycle(nodeId: Node['id'], newParentId?: Node['id']): boolean {
   const visited = new Set<Node['id']>()
   const stack = [nodeId]
@@ -217,25 +220,25 @@ function checkNodeHasCycle(nodeId: Node['id'], newParentId?: Node['id']): boolea
 
 // Events
 function wheel(e: WheelEvent) {
-  if (rafId.value)
-    cancelAnimationFrame(rafId.value)
+  const oldScale = scene.scale
 
-  rafId.value = requestAnimationFrame(() => {
-    const oldScale = scene.scale
+  const newScale = Math.min(
+    Math.max(
+      Math.exp(Math.log(scene.scale) + Math.sign(-e.deltaY) * ZOOM_INTENSITY),
+      SCENE_SCALE.min,
+    ),
+    SCENE_SCALE.max,
+  )
 
-    const newScale = Math.min(
-      Math.max(
-        Math.exp(Math.log(scene.scale) + Math.sign(-e.deltaY) * ZOOM_INTENSITY),
-        SCENE_SCALE.min,
-      ),
-      SCENE_SCALE.max,
-    )
+  const mouseX = e.clientX - scene.position.left
+  const mouseY = e.clientY - scene.position.top
 
-    const mouseX = e.clientX - scene.position.left
-    const mouseY = e.clientY - scene.position.top
+  const scaleRatio = newScale / oldScale
 
-    const scaleRatio = newScale / oldScale
+  if (animationFrameId)
+    cancelAnimationFrame(animationFrameId)
 
+  animationFrameId = requestAnimationFrame(() => {
     scene.center.x -= (mouseX - scene.center.x) * (scaleRatio - 1)
     scene.center.y -= (mouseY - scene.center.y) * (scaleRatio - 1)
 
@@ -252,16 +255,16 @@ function mousedown(e: MouseEvent) {
   mouse.start.y = e.clientY
 }
 
-function mouseup(e: MouseEvent) {
-  e.stopPropagation()
+function mouseup() {
+  setTimeout(() => {
+    if (draggingNodeId.value !== undefined) {
+      selectedNodeId.value = draggingNodeId.value
+    }
 
-  if (draggingNodeId.value !== undefined) {
-    selectedNodeId.value = draggingNodeId.value
-  }
-
-  dragging.value = false
-  draggingNodeId.value = undefined
-  draggingLine.value = undefined
+    dragging.value = false
+    draggingNodeId.value = undefined
+    draggingLine.value = undefined
+  }, 0)
 }
 
 function mousemove(e: MouseEvent) {
@@ -271,13 +274,13 @@ function mousemove(e: MouseEvent) {
   mouse.current.x = e.clientX
   mouse.current.y = e.clientY
 
-  if (rafId.value)
-    cancelAnimationFrame(rafId.value)
+  const deltaX = mouse.current.x - mouse.start.x
+  const deltaY = mouse.current.y - mouse.start.y
 
-  rafId.value = requestAnimationFrame(() => {
-    const deltaX = mouse.current.x - mouse.start.x
-    const deltaY = mouse.current.y - mouse.start.y
+  if (animationFrameId)
+    cancelAnimationFrame(animationFrameId)
 
+  animationFrameId = requestAnimationFrame(() => {
     if (dragging.value) {
       scene.center.x += deltaX
       scene.center.y += deltaY
@@ -300,6 +303,10 @@ function mousemove(e: MouseEvent) {
 // Events Node
 function mousedownNode(nodeId: Node['id']) {
   draggingNodeId.value = nodeId
+}
+
+function mouseupNode() {
+  mouseup()
 }
 
 function outputNode(nodeId: Node['id']) {
@@ -352,7 +359,7 @@ onMounted(() => {
   }
 
   document.documentElement.addEventListener('mousemove', mousemove, true)
-  document.documentElement.addEventListener('mouseup', mouseup, { capture: false, passive: true })
+  document.documentElement.addEventListener('mouseup', mouseup, true)
 })
 
 onBeforeUnmount(() => {
@@ -365,18 +372,14 @@ onBeforeUnmount(() => {
 .root {
   display: block;
   height: 100%;
+  inset: 0;
   overflow: hidden;
   position: relative;
+  transform: translate3d(0, 0, 0);
   width: 100%;
 }
 
-.renderer {
-  inset: 0;
-  overflow: hidden;
-  position: absolute;
-}
-
-.blocks {
+.scene {
   height: 0;
   left: 0;
   position: absolute;
@@ -397,5 +400,16 @@ onBeforeUnmount(() => {
   top: 50%;
   transform: translate(-50%, -50%);
   width: 4px;
+}
+
+.lines {
+  height: 0;
+  left: 0;
+  position: absolute;
+  top: 0;
+  transform: translate3d(0, 0, 0);
+  transform-origin: top left;
+  width: 0;
+  will-change: transform;
 }
 </style>

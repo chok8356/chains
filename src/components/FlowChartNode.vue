@@ -9,10 +9,12 @@
     ]"
     :style="{
       transform: `translate3d(${props.node.x}px, ${props.node.y}px, 0)`,
-    }">
+    }"
+    @mousedown.passive.capture.stop="mousedown"
+    @mouseup.passive.capture.stop="mouseup">
     <div
       :class="[$style.connectionPoint, $style.connectionPointInput]"
-      @mouseup.passive.capture="input" />
+      ref="input" />
     <div :class="$style.header">
       <span :class="$style.text"> id: {{ node.id }} </span>
     </div>
@@ -27,11 +29,12 @@
     </div>
     <div
       :class="[$style.connectionPoint, $style.connectionPointOutput]"
-      @mousedown.passive.stop.capture="output" />
+      ref="output" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { Node } from './types'
 
 const props = defineProps<{
@@ -42,15 +45,30 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'input'): void
+  (e: 'mousedown'): void
+  (e: 'mouseup'): void
   (e: 'output'): void
 }>()
 
-function input() {
-  emit('input')
+const input = ref<HTMLDivElement>()
+const output = ref<HTMLDivElement>()
+
+function mousedown(e: MouseEvent) {
+  if (e.target === output.value!) {
+    e.stopPropagation()
+    emit('output')
+    return
+  }
+  emit('mousedown')
 }
 
-function output() {
-  emit('output')
+function mouseup(e: MouseEvent) {
+  if (e.target === input.value!) {
+    e.stopPropagation()
+    emit('input')
+    return
+  }
+  emit('mouseup')
 }
 </script>
 
