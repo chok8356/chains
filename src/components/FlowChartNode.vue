@@ -44,31 +44,34 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'input'): void
+  (e: 'input-end'): void
+  (e: 'input-start'): void
   (e: 'mousedown'): void
   (e: 'mouseup'): void
-  (e: 'output'): void
+  (e: 'output-start'): void
 }>()
 
 const input = ref<HTMLDivElement>()
 const output = ref<HTMLDivElement>()
 
 function mousedown(e: MouseEvent) {
+  if (e.target === input.value!) {
+    emit('input-start')
+    return
+  }
   if (e.target === output.value!) {
-    emit('output')
+    emit('output-start')
+    return
   }
-  else {
-    emit('mousedown')
-  }
+  emit('mousedown')
 }
 
 function mouseup(e: MouseEvent) {
   if (e.target === input.value!) {
-    emit('input')
+    emit('input-end')
+    return
   }
-  else {
-    emit('mouseup')
-  }
+  emit('mouseup')
 }
 </script>
 

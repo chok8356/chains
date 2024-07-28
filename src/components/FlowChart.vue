@@ -37,10 +37,10 @@
         :key="node.id"
         :node="node"
         :selected="node.id === selectedNodeId"
-        @input="inputNode(node.id)"
+        @input-end="inputEndNode(node.id)"
+        @input-start="inputStartNode(node.id)"
         @mousedown="mousedownNode(node.id)"
-        @mouseup="mouseupNode()"
-        @output="outputNode(node.id)"
+        @output-start="outputStartNode(node.id)"
         v-for="node in nodes"
         v-memo="[node.x, node.y, node.id === draggingNodeId, node.id === selectedNodeId]" />
     </div>
@@ -57,7 +57,7 @@ import FlowChartLine from '@/components/FlowChartLine.vue'
 import FlowChartNode from '@/components/FlowChartNode.vue'
 
 const props = defineProps<{
-  value?: Blocks
+  value: Blocks
 }>()
 
 defineEmits<{
@@ -118,9 +118,10 @@ function createLine(startId: Node['id'], endId: Node['id']): Line {
   }
 }
 
-function addNode(id: Node['id'], x: number, y: number, inputId?: Node['id']): void {
-  if (nodes.value[id])
+function addNode(id: Node['id'], x: number, y: number, inputId: Node['id'] | undefined): void {
+  if (nodes.value[id]) {
     throw new Error(`Node with id ${id} already exists`)
+  }
 
   nodes.value[id] = {
     id,
@@ -143,8 +144,9 @@ function addNode(id: Node['id'], x: number, y: number, inputId?: Node['id']): vo
 function moveNode(id: Node['id'], deltaX: number, deltaY: number): void {
   const node = nodes.value[id]
 
-  if (!node)
+  if (!node) {
     throw new Error(`Node with id ${id} does not exist`)
+  }
 
   node.x += deltaX
   node.y += deltaY
@@ -168,45 +170,48 @@ function moveNode(id: Node['id'], deltaX: number, deltaY: number): void {
   }
 }
 
-function changeParentNode(nodeId: Node['id'], newParentId?: Node['id']): void {
+function changeParentNode(nodeId: Node['id'], newParentId: Node['id'] | undefined): void {
   const node = nodes.value[nodeId]
 
-  if (!node)
+  if (!node) {
     throw new Error(`Node with id ${nodeId} does not exist`)
+  }
 
-  if (node.inputId) {
+  if (node.inputId !== undefined) {
     const oldParent = nodes.value[node.inputId]
     if (oldParent) {
       oldParent.outputIds.delete(nodeId)
-      const oldLineId = createLineId(node.inputId, nodeId)
-      delete lines.value[oldLineId]
+      delete lines.value[createLineId(node.inputId, nodeId)]
     }
   }
 
   node.inputId = newParentId
 
-  if (newParentId) {
+  if (newParentId !== undefined) {
     const newParent = nodes.value[newParentId]
     if (newParent) {
       newParent.outputIds.add(nodeId)
-      const newLineId = createLineId(newParentId, nodeId)
-      lines.value[newLineId] = createLine(newParentId, nodeId)
+      lines.value[createLineId(newParentId, nodeId)] = createLine(newParentId, nodeId)
     }
   }
 }
 
 // Graph Depth-First Search
-function checkNodeHasCycle(nodeId: Node['id'], newParentId?: Node['id']): boolean {
+function checkNodeHasCycle(nodeId: Node['id'], newParentId: Node['id'] | undefined): boolean {
   const visited = new Set<Node['id']>()
   const stack = [nodeId]
 
   while (stack.length > 0) {
     const currentId = stack.pop()!
-    if (currentId === newParentId)
+
+    if (currentId === newParentId) {
       return true
+    }
+
     if (!visited.has(currentId)) {
       visited.add(currentId)
       const node = nodes.value[currentId]
+
       if (node) {
         for (const outputId of node.outputIds) {
           stack.push(outputId)
@@ -235,8 +240,9 @@ function wheel(e: WheelEvent) {
 
   const scaleRatio = newScale / oldScale
 
-  if (animationFrameId)
+  if (animationFrameId) {
     cancelAnimationFrame(animationFrameId)
+  }
 
   animationFrameId = requestAnimationFrame(() => {
     scene.center.x -= (mouseX - scene.center.x) * (scaleRatio - 1)
@@ -277,8 +283,9 @@ function mousemove(e: MouseEvent) {
   const deltaX = mouse.current.x - mouse.start.x
   const deltaY = mouse.current.y - mouse.start.y
 
-  if (animationFrameId)
+  if (animationFrameId) {
     cancelAnimationFrame(animationFrameId)
+  }
 
   animationFrameId = requestAnimationFrame(() => {
     if (dragging.value) {
@@ -305,11 +312,7 @@ function mousedownNode(nodeId: Node['id']) {
   draggingNodeId.value = nodeId
 }
 
-function mouseupNode() {
-  mouseup()
-}
-
-function outputNode(nodeId: Node['id']) {
+function outputStartNode(nodeId: Node['id']) {
   const node = nodes.value[nodeId]
 
   const x = node.x + BLOCK_SIZE.width / 2
@@ -328,11 +331,34 @@ function outputNode(nodeId: Node['id']) {
   }
 }
 
-function inputNode(nodeId: Node['id']) {
+function inputStartNode(nodeId: Node['id']) {
+  const node = nodes.value[nodeId]
+
+  if (node.inputId !== undefined) {
+    const inputNode = nodes.value[node.inputId]
+
+    draggingLine.value = {
+      end: {
+        x: node.x + BLOCK_SIZE.width / 2,
+        y: node.y,
+      },
+      start: {
+        id: inputNode.id,
+        x: inputNode.x + BLOCK_SIZE.width / 2,
+        y: inputNode.y + BLOCK_SIZE.height,
+      },
+    }
+
+    changeParentNode(nodeId, undefined)
+  }
+}
+
+function inputEndNode(nodeId: Node['id']) {
   if (draggingLine.value !== undefined) {
     const { id: newParentId } = draggingLine.value.start
+
     if (newParentId !== nodeId) {
-      if (checkNodeHasCycle(nodeId, draggingLine.value.start.id)) {
+      if (checkNodeHasCycle(nodeId, newParentId)) {
         throw new Error(`Cyclic dependency was found: ${nodeId} and ${newParentId}`)
       }
       else {

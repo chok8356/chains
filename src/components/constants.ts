@@ -12,4 +12,4 @@ export const BLOCK_SIZE = {
 
 // 1000ms / 144fps = 6ms
 // 1000ms / 60fps = 16ms
-export const THROTTLE = 16
+export const THROTTLE = 6

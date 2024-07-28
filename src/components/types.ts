@@ -1,6 +1,6 @@
 export interface Node {
   id: number
-  inputId?: Node['id']
+  inputId: Node['id'] | undefined
   outputIds: Set<Node['id']>
   x: number
   y: number
@@ -8,12 +8,12 @@ export interface Node {
 
 export interface Line {
   end: {
-    id?: number
+    id: number | undefined
     x: number
     y: number
   }
   start: {
-    id?: number
+    id: number | undefined
     x: number
     y: number
   }
@@ -21,7 +21,7 @@ export interface Line {
 
 export interface Block {
   id: number
-  parentId?: Block['id']
+  parentId: Block['id'] | undefined
   x: number
   y: number
 }

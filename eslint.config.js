@@ -28,6 +28,7 @@ export default antfu(
       'vue/block-order': ['error', {
         order: ['template', 'script', 'style'],
       }],
+      'vue/custom-event-name-casing': ['error', 'kebab-case'],
       'vue/html-closing-bracket-newline': [
         'error',
         {
