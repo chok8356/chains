@@ -55,20 +55,20 @@ const output = ref<HTMLDivElement>()
 
 function mousedown(e: MouseEvent) {
   if (e.target === output.value!) {
-    e.stopPropagation()
     emit('output')
-    return
   }
-  emit('mousedown')
+  else {
+    emit('mousedown')
+  }
 }
 
 function mouseup(e: MouseEvent) {
   if (e.target === input.value!) {
-    e.stopPropagation()
     emit('input')
-    return
   }
-  emit('mouseup')
+  else {
+    emit('mouseup')
+  }
 }
 </script>
 
