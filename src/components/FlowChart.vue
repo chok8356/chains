@@ -320,6 +320,7 @@ function outputStartNode(nodeId: Node['id']) {
 
   draggingLine.value = {
     end: {
+      id: undefined,
       x,
       y,
     },
@@ -339,6 +340,7 @@ function inputStartNode(nodeId: Node['id']) {
 
     draggingLine.value = {
       end: {
+        id: undefined,
         x: node.x + BLOCK_SIZE.width / 2,
         y: node.y,
       },

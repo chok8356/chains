@@ -11,6 +11,7 @@ import FlowChart from '@/components/FlowChart.vue'
 const blocks = ref<Blocks>({
   1: {
     id: 1,
+    parentId: undefined,
     x: 0,
     y: -300,
   },
@@ -40,6 +41,7 @@ const blocks = ref<Blocks>({
   },
   6: {
     id: 6,
+    parentId: undefined,
     x: 0,
     y: 340,
   },

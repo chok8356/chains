@@ -97,7 +97,7 @@ function mouseup(e: MouseEvent) {
 }
 
 .dragging {
-  box-shadow: 0 12px 24px 2px var(--box-shadow);
+  box-shadow: 0 16px 32px -4px var(--box-shadow);
   cursor: grabbing;
   z-index: 3;
 }
@@ -150,14 +150,14 @@ function mouseup(e: MouseEvent) {
 }
 
 .connectionPoint {
-  background-color: var(--color-background-100);
-  border: 1px solid var(--color-primary-400);
+  background-color: var(--color-primary-400);
+  border: 2px solid var(--color-background-100);
   border-radius: 50%;
   cursor: pointer;
-  height: 6px;
+  height: 8px;
   left: 50%;
   position: absolute;
-  width: 6px;
+  width: 8px;
   z-index: 4;
 }
 
