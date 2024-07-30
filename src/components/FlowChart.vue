@@ -33,16 +33,16 @@
         v-if="draggingLine" />
 
       <FlowChartNode
-        :dragging="node.id === draggingNodeId"
+        :dragging="draggingNodes && selectedNodeIds.has(node.id)"
         :key="node.id"
         :node="node"
-        :selected="node.id === selectedNodeId"
+        :selected="selectedNodeIds.has(node.id)"
         @input-end="inputEndNode(node.id)"
         @input-start="inputStartNode(node.id)"
-        @mousedown="mousedownNode(node.id)"
+        @mousedown="(e) => mousedownNode(e, node.id)"
         @output-start="outputStartNode(node.id)"
         v-for="node in nodes"
-        v-memo="[node.x, node.y, node.id === draggingNodeId, node.id === selectedNodeId]" />
+        v-memo="[node.x, node.y, draggingNodes, selectedNodeIds.has(node.id)]" />
     </div>
   </div>
 </template>
@@ -69,11 +69,11 @@ const rootEl = ref<HTMLDivElement>()
 let animationFrameId: null | number = null
 
 const dragging = ref(false)
+const draggingNodes = ref(false)
 
 const draggingLine = ref<Line>()
 
-const draggingNodeId = ref<Node['id']>()
-const selectedNodeId = ref<Node['id']>()
+const selectedNodeIds = ref<Set<Node['id']>>(new Set())
 
 // Scene
 const scene = reactive({
@@ -255,7 +255,7 @@ function wheel(e: WheelEvent) {
 function mousedown(e: MouseEvent) {
   dragging.value = true
 
-  selectedNodeId.value = undefined
+  selectedNodeIds.value = new Set()
 
   mouse.start.x = e.clientX
   mouse.start.y = e.clientY
@@ -263,12 +263,8 @@ function mousedown(e: MouseEvent) {
 
 function mouseup() {
   setTimeout(() => {
-    if (draggingNodeId.value !== undefined) {
-      selectedNodeId.value = draggingNodeId.value
-    }
-
     dragging.value = false
-    draggingNodeId.value = undefined
+    draggingNodes.value = false
     draggingLine.value = undefined
   }, 0)
 }
@@ -293,8 +289,10 @@ function mousemove(e: MouseEvent) {
       scene.center.y += deltaY
     }
 
-    if (draggingNodeId.value !== undefined) {
-      moveNode(draggingNodeId.value, deltaX / scene.scale, deltaY / scene.scale)
+    if (draggingNodes.value) {
+      for (const nodeId of selectedNodeIds.value) {
+        moveNode(nodeId, deltaX / scene.scale, deltaY / scene.scale)
+      }
     }
 
     if (draggingLine.value !== undefined) {
@@ -308,8 +306,24 @@ function mousemove(e: MouseEvent) {
 }
 
 // Events Node
-function mousedownNode(nodeId: Node['id']) {
-  draggingNodeId.value = nodeId
+function mousedownNode(e: MouseEvent, nodeId: Node['id']) {
+  if (e.ctrlKey) {
+    if (selectedNodeIds.value.has(nodeId)) {
+      selectedNodeIds.value.delete(nodeId)
+    }
+    else {
+      selectedNodeIds.value.add(nodeId)
+    }
+  }
+  else {
+    if (selectedNodeIds.value.has(nodeId)) {
+      draggingNodes.value = true
+    }
+    else {
+      selectedNodeIds.value = new Set([nodeId])
+      draggingNodes.value = true
+    }
+  }
 }
 
 function outputStartNode(nodeId: Node['id']) {
