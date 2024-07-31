@@ -2,7 +2,7 @@
   <div
     :class="$style.root"
     @mousedown.passive.stop="mousedown"
-    @wheel.passive.capture.stop="wheel"
+    @wheel.prevent.capture.stop="wheel"
     ref="rootEl">
     <FlowChartGrid :scene="scene" />
     <div
@@ -44,17 +44,22 @@
         v-for="node in nodes"
         v-memo="[node.x, node.y, draggingNodes, selectedNodeIds.has(node.id)]" />
     </div>
+
+    <FlowChartDragSelectBox
+      :style="dragSelectBoxStyles"
+      v-if="draggingDragSelect" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import type { Blocks, Line, Node } from '@/components/types'
 
 import { BLOCK_SIZE, SCENE_SCALE, ZOOM_INTENSITY } from '@/components/constants'
 import FlowChartGrid from '@/components/FlowChartGrid.vue'
 import FlowChartLine from '@/components/FlowChartLine.vue'
 import FlowChartNode from '@/components/FlowChartNode.vue'
+import FlowChartDragSelectBox from '@/components/FlowChartDragSelectBox.vue'
 
 const props = defineProps<{
   value: Blocks
@@ -70,10 +75,39 @@ let animationFrameId: null | number = null
 
 const dragging = ref(false)
 const draggingNodes = ref(false)
+const draggingDragSelect = ref(false)
 
 const draggingLine = ref<Line>()
 
 const selectedNodeIds = ref<Set<Node['id']>>(new Set())
+
+const dragSelectBoxPosition = ref({
+  end: {
+    x: 0,
+    y: 0,
+  },
+  start: {
+    x: 0,
+    y: 0,
+  },
+})
+
+const dragSelectBoxStyles = computed(() => {
+  const { end, start } = dragSelectBoxPosition.value
+
+  const width = Math.abs(start.x - end.x)
+  const height = Math.abs(start.y - end.y)
+
+  const left = end.x < start.x ? end.x : start.x
+  const top = end.y < start.y ? end.y : start.y
+
+  return {
+    height: `${height}px`,
+    left: `${left}px`,
+    top: `${top}px`,
+    width: `${width}px`,
+  }
+})
 
 // Scene
 const scene = reactive({
@@ -253,7 +287,22 @@ function wheel(e: WheelEvent) {
 }
 
 function mousedown(e: MouseEvent) {
-  dragging.value = true
+  if (e.ctrlKey) {
+    dragSelectBoxPosition.value = {
+      end: {
+        x: e.clientX,
+        y: e.clientY,
+      },
+      start: {
+        x: e.clientX,
+        y: e.clientY,
+      },
+    }
+    draggingDragSelect.value = true
+  }
+  else {
+    dragging.value = true
+  }
 
   selectedNodeIds.value = new Set()
 
@@ -263,8 +312,18 @@ function mousedown(e: MouseEvent) {
 
 function mouseup() {
   setTimeout(() => {
+    if (draggingDragSelect.value) {
+      for (const nodeId in nodes.value) {
+        const node = nodes.value[nodeId]
+        if (dragSelectCollisionCheck(node)) {
+          selectedNodeIds.value.add(node.id)
+        }
+      }
+    }
+
     dragging.value = false
     draggingNodes.value = false
+    draggingDragSelect.value = false
     draggingLine.value = undefined
   }, 0)
 }
@@ -287,6 +346,13 @@ function mousemove(e: MouseEvent) {
     if (dragging.value) {
       scene.center.x += deltaX
       scene.center.y += deltaY
+    }
+
+    if (draggingDragSelect.value) {
+      dragSelectBoxPosition.value.end = {
+        x: mouse.current.x,
+        y: mouse.current.y,
+      }
     }
 
     if (draggingNodes.value) {
@@ -382,6 +448,21 @@ function inputEndNode(nodeId: Node['id']) {
       }
     }
   }
+}
+
+function dragSelectCollisionCheck(node: Node) {
+  const nodeLeft = node.x * scene.scale + scene.center.x
+  const nodeTop = node.y * scene.scale + scene.center.y
+  const nodeRight = nodeLeft + BLOCK_SIZE.width * scene.scale
+  const nodeBottom = nodeTop + BLOCK_SIZE.height * scene.scale
+
+  const { end, start } = dragSelectBoxPosition.value
+  const selectionLeft = Math.min(start.x, end.x)
+  const selectionRight = Math.max(start.x, end.x)
+  const selectionTop = Math.min(start.y, end.y)
+  const selectionBottom = Math.max(start.y, end.y)
+
+  return nodeLeft > selectionLeft && nodeRight < selectionRight && nodeTop > selectionTop && nodeBottom < selectionBottom
 }
 
 onMounted(() => {
