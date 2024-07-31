@@ -77,7 +77,7 @@ function mouseup(e: MouseEvent) {
 
 <style module>
 .root {
-  background-color: var(--color-background-100);
+  background-color: var(--color-background-0);
   border: 2px solid transparent;
   border-radius: 12px;
   box-shadow: 0 4px 8px transparent;
@@ -103,13 +103,13 @@ function mouseup(e: MouseEvent) {
 }
 
 .selected {
-  border-color: var(--color-primary-400);
+  border-color: var(--color-primary);
   z-index: 2;
 }
 
 .header {
   align-items: center;
-  background-color: var(--color-primary-400);
+  background-color: var(--color-primary);
   border-radius: 8px;
   display: flex;
   gap: 8px;
@@ -133,7 +133,7 @@ function mouseup(e: MouseEvent) {
 }
 
 .content {
-  color: var(--color-text-100);
+  color: var(--color-text);
   display: block;
   font-size: 12px;
   height: auto;
@@ -150,8 +150,8 @@ function mouseup(e: MouseEvent) {
 }
 
 .connectionPoint {
-  background-color: var(--color-primary-400);
-  border: 2px solid var(--color-background-100);
+  background-color: var(--color-primary);
+  border: 2px solid var(--color-background-0);
   border-radius: 50%;
   cursor: pointer;
   height: 8px;

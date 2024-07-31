@@ -4,8 +4,8 @@
 
 <style module>
 .root {
-  background-color: rgb(0 0 255 / 4%);
-  border: 1px dashed var(--color-primary-400);
+  background-color: rgb(0 255 0 / 2%);
+  border: 1px dashed var(--color-primary);
   position: absolute;
 }
 </style>

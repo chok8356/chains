@@ -52,7 +52,7 @@ const dotSize = computed(() => {
   width: 100%;
 
   circle {
-    fill: var(--color-background-500);
+    fill: var(--color-background-30);
     stroke: none;
   }
 }

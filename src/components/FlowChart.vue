@@ -259,8 +259,6 @@ function checkNodeHasCycle(nodeId: Node['id'], newParentId: Node['id'] | undefin
 
 // Events
 function wheel(e: WheelEvent) {
-  const oldScale = scene.scale
-
   const newScale = Math.min(
     Math.max(
       Math.exp(Math.log(scene.scale) + Math.sign(-e.deltaY) * ZOOM_INTENSITY),
@@ -269,18 +267,13 @@ function wheel(e: WheelEvent) {
     SCENE_SCALE.max,
   )
 
-  const mouseX = e.clientX - scene.position.left
-  const mouseY = e.clientY - scene.position.top
-
-  const scaleRatio = newScale / oldScale
-
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId)
   }
 
   animationFrameId = requestAnimationFrame(() => {
-    scene.center.x -= (mouseX - scene.center.x) * (scaleRatio - 1)
-    scene.center.y -= (mouseY - scene.center.y) * (scaleRatio - 1)
+    scene.center.x -= (e.clientX - scene.position.left - scene.center.x) * (newScale / scene.scale - 1)
+    scene.center.y -= (e.clientY - scene.position.top - scene.center.y) * (newScale / scene.scale - 1)
 
     scene.scale = newScale
   })
@@ -514,15 +507,15 @@ onBeforeUnmount(() => {
 }
 
 .center {
-  background-color: red;
+  background-color: var(--color-background-30);
   border-radius: 50%;
-  height: 4px;
+  height: 6px;
   left: 50%;
   pointer-events: none;
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 4px;
+  width: 6px;
 }
 
 .lines {

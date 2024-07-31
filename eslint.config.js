@@ -49,6 +49,15 @@ export default antfu(
         math: 'always',
         svg: 'always',
       }],
+      'vue/max-attributes-per-line': ['error', {
+        multiline: {
+          max: 1,
+        },
+        singleline: {
+          max: 1,
+        },
+      }],
+      'vue/singleline-html-element-content-newline': 'off',
     },
   },
 )

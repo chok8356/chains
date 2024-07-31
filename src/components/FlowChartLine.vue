@@ -28,7 +28,7 @@ const d = computed(() => {
   overflow: visible;
   pointer-events: none;
   position: absolute;
-  stroke: var(--color-background-400);
+  stroke: var(--color-background-20);
   stroke-opacity: 1;
   stroke-width: 1;
   top: 0;
